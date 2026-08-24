@@ -32,5 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Self-test executable** covering period math, CSV parsing, merge ranks, and
   CLI tokens. A live Bandwidth+ check runs only when that app's history is
   present.
+- **Prebuilt GitHub Release zips** for Apple Silicon: menu bar app, CLI, or
+  both (with `install.sh`), so you do not have to build from source.
 
 [1.0.0]: https://github.com/ashahinL/macOS-Bandwidth-Meter/releases/tag/v1.0.0

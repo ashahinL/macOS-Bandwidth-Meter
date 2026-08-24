@@ -20,9 +20,15 @@ jobs:
       - name: Build the menu bar app and CLI
         run: make app
 
-      - name: Verify the app bundle
+      - name: Package release zips
+        run: make dist
+
+      - name: Verify the app bundle and zips
         run: |
           plutil -lint "dist/Bandwidth Meter.app/Contents/Info.plist"
           file "dist/Bandwidth Meter.app/Contents/MacOS/BandwidthMeter"
           file dist/bandwidth-meter
           test -x dist/bandwidth-meter
+          unzip -l dist/Bandwidth-Meter-*.app.zip | grep 'Bandwidth Meter.app'
+          unzip -l dist/bandwidth-meter-*-macos-*.zip | grep bandwidth-meter
+          unzip -l dist/BandwidthMeter-*-macos-*.zip | grep install.sh

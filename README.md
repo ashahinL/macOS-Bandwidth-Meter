@@ -90,16 +90,43 @@ than 1.
 - **Apple Silicon.** Developed on an M-series Mac running macOS 26.
 - [Bandwidth+](https://apps.apple.com/app/bandwidth/id490461369) from the Mac
   App Store, left running so each day is recorded
-- Xcode Command Line Tools to build from source (`xcode-select --install`)
 
 ## Install
 
-```sh
-git clone https://github.com/ashahinL/macOS-Bandwidth-Meter.git
-cd macOS-Bandwidth-Meter
+### Download (recommended)
 
-make                    # build the menu bar app and CLI
-make install            # CLI → ~/.local/bin, app → /Applications
+Grab a zip from [Releases](https://github.com/ashahinL/macOS-Bandwidth-Meter/releases). No Xcode.
+
+| File | What you get |
+|---|---|
+| `BandwidthMeter-*-macos-arm64.zip` | **Both** — app, CLI, and `install.sh` |
+| `Bandwidth-Meter-*.app.zip` | Menu bar app only |
+| `bandwidth-meter-*-macos-arm64.zip` | CLI only |
+
+**Both.** Unzip the combined archive and run the installer:
+
+```sh
+unzip BandwidthMeter-*-macos-arm64.zip
+cd BandwidthMeter-*-macos-arm64
+./install.sh              # app + CLI
+# ./install.sh --app      # menu bar only
+# ./install.sh --cli      # CLI only
+```
+
+That copies the app to `/Applications` and the CLI to `~/.local/bin`, and
+clears the download quarantine so Gatekeeper does not block them.
+
+**App only.** Unzip and drag **Bandwidth Meter.app** to `/Applications`. The
+build is not notarized, so the first launch is right-click → Open (or run
+`xattr -cr "/Applications/Bandwidth Meter.app"`).
+
+**CLI only.** Unzip and put `bandwidth-meter` on your `PATH`:
+
+```sh
+mkdir -p ~/.local/bin
+cp bandwidth-meter ~/.local/bin/
+chmod +x ~/.local/bin/bandwidth-meter
+xattr -cr ~/.local/bin/bandwidth-meter
 ```
 
 Put `~/.local/bin` on your `PATH` if it is not already. Then:
@@ -112,6 +139,18 @@ The menu bar app is optional. Open it only when you want the dashboard:
 
 ```sh
 open "/Applications/Bandwidth Meter.app"
+```
+
+### Build from source
+
+```sh
+xcode-select --install    # once, if you do not have Command Line Tools
+
+git clone https://github.com/ashahinL/macOS-Bandwidth-Meter.git
+cd macOS-Bandwidth-Meter
+
+make                    # build the menu bar app and CLI
+make install            # CLI → ~/.local/bin, app → /Applications
 ```
 
 ## Usage
@@ -177,12 +216,13 @@ weekly and monthly numbers still come from Bandwidth+ history.
 ## Uninstall
 
 ```sh
-make uninstall
+rm -f ~/.local/bin/bandwidth-meter
+rm -rf "/Applications/Bandwidth Meter.app"
 ```
 
-That removes `~/.local/bin/bandwidth-meter` and
-`/Applications/Bandwidth Meter.app`. It does not touch Bandwidth+ or the local
-store. To drop the store as well:
+If you still have the repo checked out, `make uninstall` does the same.
+
+That does not touch Bandwidth+ or the local store. To drop the store as well:
 
 ```sh
 rm -rf ~/Library/Application\ Support/BandwidthMeter
@@ -228,6 +268,15 @@ from this repo. The label must be a single `Text`, and settings cannot use
 no Dock icon. Confirm it with `pgrep -fl BandwidthMeter`, then check whether
 the menu bar is simply full.
 
+**macOS says the app / CLI cannot be opened because it is from an unidentified
+developer.** The GitHub zips are ad-hoc signed, not notarized. Use
+`./install.sh` from the combined zip, or right-click the app → Open, or:
+
+```sh
+xattr -cr "/Applications/Bandwidth Meter.app"
+xattr -cr ~/.local/bin/bandwidth-meter
+```
+
 ## Layout
 
 ```
@@ -237,9 +286,11 @@ Sources/BandwidthMeterCLI/      bandwidth-meter command
 Sources/InterfaceCounters/      64-bit interface counters (C)
 Sources/MeterSelfTest/          self-test executable
 Resources/Info.plist            app bundle metadata
-Makefile                        build, test, install
+scripts/install-release.sh      copied into the combined zip as install.sh
+Makefile                        build, test, dist, install
 build.sh                        make test app install, then print a summary
-.github/workflows/ci.yml        test and build on macOS
+.github/workflows/ci.yml        test, build, and pack zips on macOS
+.github/workflows/release.yml   attach zips when a v* tag is pushed
 ```
 
 The dependency runs one way: GUI and CLI both call `MeterCore`. Anything the

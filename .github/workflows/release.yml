@@ -1,0 +1,73 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Package and publish
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run test suite
+        run: make test
+
+      - name: Package release zips
+        run: make dist
+
+      - name: Get version from tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Bandwidth Meter ${{ steps.version.outputs.tag }}
+          body: |
+            Weekly and monthly bandwidth totals from [Bandwidth+](https://apps.apple.com/app/bandwidth/id490461369) daily history.
+
+            Keep Bandwidth+ running for capture. Download one of the zips below — you do not need Xcode.
+
+            ## Downloads
+
+            | File | What you get |
+            |---|---|
+            | `BandwidthMeter-*-macos-arm64.zip` | **Both** — app, CLI, and `install.sh` |
+            | `Bandwidth-Meter-*.app.zip` | Menu bar app only |
+            | `bandwidth-meter-*-macos-arm64.zip` | CLI only |
+
+            Apple Silicon, macOS 14+. Not notarized: the combined zip's `./install.sh` clears quarantine. Otherwise right-click the app → Open, or `xattr -cr` the files you copied.
+
+            ### Both
+            ```sh
+            unzip BandwidthMeter-*-macos-arm64.zip
+            cd BandwidthMeter-*-macos-arm64
+            ./install.sh
+            ```
+
+            ### App only
+            Unzip and drag **Bandwidth Meter.app** to `/Applications`.
+
+            ### CLI only
+            ```sh
+            unzip bandwidth-meter-*-macos-arm64.zip
+            mkdir -p ~/.local/bin
+            cp bandwidth-meter ~/.local/bin/
+            chmod +x ~/.local/bin/bandwidth-meter
+            xattr -cr ~/.local/bin/bandwidth-meter
+            ```
+
+            See the [changelog](https://github.com/ashahinL/macOS-Bandwidth-Meter/blob/main/CHANGELOG.md) for what changed.
+          files: dist/*.zip
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
