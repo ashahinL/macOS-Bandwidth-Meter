@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test and build
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run test suite
+        run: make test
+
+      - name: Build the menu bar app and CLI
+        run: make app
+
+      - name: Verify the app bundle
+        run: |
+          plutil -lint "dist/Bandwidth Meter.app/Contents/Info.plist"
+          file "dist/Bandwidth Meter.app/Contents/MacOS/BandwidthMeter"
+          file dist/bandwidth-meter
+          test -x dist/bandwidth-meter
