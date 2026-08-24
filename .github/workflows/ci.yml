@@ -30,5 +30,5 @@ jobs:
           file dist/bandwidth-meter
           test -x dist/bandwidth-meter
           unzip -l dist/Bandwidth-Meter-*.app.zip | grep 'Bandwidth Meter.app'
-          unzip -l dist/bandwidth-meter-*-macos-*.zip | grep bandwidth-meter
-          unzip -l dist/BandwidthMeter-*-macos-*.zip | grep install.sh
+          unzip -l dist/Bandwidth-Meter-*-cli-macos-*.zip | grep bandwidth-meter
+          unzip -l dist/Bandwidth-Meter-*-full-macos-*.zip | grep install.sh

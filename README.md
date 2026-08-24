@@ -99,15 +99,15 @@ Grab a zip from [Releases](https://github.com/ashahinL/macOS-Bandwidth-Meter/rel
 
 | File | What you get |
 |---|---|
-| `BandwidthMeter-*-macos-arm64.zip` | **Both** — app, CLI, and `install.sh` |
+| `Bandwidth-Meter-*-full-macos-arm64.zip` | **Both** — app, CLI, and `install.sh` |
 | `Bandwidth-Meter-*.app.zip` | Menu bar app only |
-| `bandwidth-meter-*-macos-arm64.zip` | CLI only |
+| `Bandwidth-Meter-*-cli-macos-arm64.zip` | CLI only |
 
 **Both.** Unzip the combined archive and run the installer:
 
 ```sh
-unzip BandwidthMeter-*-macos-arm64.zip
-cd BandwidthMeter-*-macos-arm64
+unzip Bandwidth-Meter-*-full-macos-arm64.zip
+cd Bandwidth-Meter-*-full-macos-arm64
 ./install.sh              # app + CLI
 # ./install.sh --app      # menu bar only
 # ./install.sh --cli      # CLI only
@@ -123,6 +123,7 @@ build is not notarized, so the first launch is right-click → Open (or run
 **CLI only.** Unzip and put `bandwidth-meter` on your `PATH`:
 
 ```sh
+unzip Bandwidth-Meter-*-cli-macos-arm64.zip
 mkdir -p ~/.local/bin
 cp bandwidth-meter ~/.local/bin/
 chmod +x ~/.local/bin/bandwidth-meter

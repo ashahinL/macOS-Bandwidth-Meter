@@ -19,8 +19,8 @@ SWIFT       := swift
 VERSION     := $(shell /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' $(INFO_PLIST))
 ARCH        := $(shell uname -m)
 APP_ZIP     := $(DIST_DIR)/Bandwidth-Meter-$(VERSION).app.zip
-CLI_ZIP     := $(DIST_DIR)/bandwidth-meter-$(VERSION)-macos-$(ARCH).zip
-BOTH_NAME   := BandwidthMeter-$(VERSION)-macos-$(ARCH)
+CLI_ZIP     := $(DIST_DIR)/Bandwidth-Meter-$(VERSION)-cli-macos-$(ARCH).zip
+BOTH_NAME   := Bandwidth-Meter-$(VERSION)-full-macos-$(ARCH)
 BOTH_ZIP    := $(DIST_DIR)/$(BOTH_NAME).zip
 
 SHELL := /bin/bash
@@ -51,7 +51,7 @@ cli: app
 ## Zip the app, the CLI, and a combined archive (for GitHub Releases)
 dist: app
 	@find "$(DIST_DIR)" -name .DS_Store -delete
-	@rm -f "$(APP_ZIP)" "$(CLI_ZIP)" "$(BOTH_ZIP)"
+	@rm -f "$(DIST_DIR)"/*.zip
 	@ditto -c -k --norsrc --noextattr --noacl --keepParent "$(APP_BUNDLE)" "$(APP_ZIP)"
 	@(cd "$(DIST_DIR)" && zip -X -q "$(notdir $(CLI_ZIP))" "$(CLI_NAME)")
 	@stage="$$(mktemp -d)/$(BOTH_NAME)"; \

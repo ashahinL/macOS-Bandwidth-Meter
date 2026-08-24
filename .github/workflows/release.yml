@@ -24,14 +24,36 @@ jobs:
       - name: Package release zips
         run: make dist
 
+      - name: Drop leftover zip names from an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            echo "no existing release for $tag"
+            exit 0
+          fi
+          gh release view "$tag" --json assets --jq '.assets[].name' \
+            | while IFS= read -r name; do
+                [[ "$name" == *.zip ]] || continue
+                case "$name" in
+                  Bandwidth-Meter-*.app.zip|Bandwidth-Meter-*-cli-macos-*.zip|Bandwidth-Meter-*-full-macos-*.zip)
+                    ;;
+                  *)
+                    echo "removing stale asset $name"
+                    gh release delete-asset "$tag" "$name" --yes
+                    ;;
+                esac
+              done
+
       - name: Get version from tag
         id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Bandwidth Meter ${{ steps.version.outputs.tag }}
+          name: Bandwidth Meter ${{ steps.version.outputs.version }}
           body: |
             Weekly and monthly bandwidth totals from [Bandwidth+](https://apps.apple.com/app/bandwidth/id490461369) daily history.
 
@@ -41,16 +63,16 @@ jobs:
 
             | File | What you get |
             |---|---|
-            | `BandwidthMeter-*-macos-arm64.zip` | **Both** — app, CLI, and `install.sh` |
+            | `Bandwidth-Meter-*-full-macos-arm64.zip` | **Both** — app, CLI, and `install.sh` |
             | `Bandwidth-Meter-*.app.zip` | Menu bar app only |
-            | `bandwidth-meter-*-macos-arm64.zip` | CLI only |
+            | `Bandwidth-Meter-*-cli-macos-arm64.zip` | CLI only |
 
             Apple Silicon, macOS 14+. Not notarized: the combined zip's `./install.sh` clears quarantine. Otherwise right-click the app → Open, or `xattr -cr` the files you copied.
 
             ### Both
             ```sh
-            unzip BandwidthMeter-*-macos-arm64.zip
-            cd BandwidthMeter-*-macos-arm64
+            unzip Bandwidth-Meter-*-full-macos-arm64.zip
+            cd Bandwidth-Meter-*-full-macos-arm64
             ./install.sh
             ```
 
@@ -59,7 +81,7 @@ jobs:
 
             ### CLI only
             ```sh
-            unzip bandwidth-meter-*-macos-arm64.zip
+            unzip Bandwidth-Meter-*-cli-macos-arm64.zip
             mkdir -p ~/.local/bin
             cp bandwidth-meter ~/.local/bin/
             chmod +x ~/.local/bin/bandwidth-meter
