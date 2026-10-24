@@ -5,6 +5,61 @@ enum Expect: Error {
     case failed(String)
 }
 
+let sampleHistoryArchive = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>$archiver</key>
+	<string>NSKeyedArchiver</string>
+	<key>$version</key>
+	<integer>100000</integer>
+	<key>$top</key>
+	<dict>
+		<key>root</key>
+		<dict>
+			<key>CF$UID</key>
+			<integer>1</integer>
+		</dict>
+	</dict>
+	<key>$objects</key>
+	<array>
+		<string>$null</string>
+		<dict>
+			<key>Days</key>
+			<dict>
+				<key>NS.keys</key>
+				<array>
+					<string>2026-08-24</string>
+				</array>
+				<key>NS.objects</key>
+				<array>
+					<dict>
+						<key>Networks</key>
+						<dict>
+							<key>NS.keys</key>
+							<array>
+								<string>CafeWiFi</string>
+							</array>
+							<key>NS.objects</key>
+							<array>
+								<dict>
+									<key>In</key>
+									<integer>1500</integer>
+									<key>Out</key>
+									<integer>25</integer>
+								</dict>
+							</array>
+						</dict>
+					</dict>
+				</array>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>
+"""
+
 func makeTempDirectory() throws -> URL {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("bandwidth-meter-test-\(UUID().uuidString)", isDirectory: true)
@@ -294,13 +349,84 @@ func run() -> Int {
                 try assertLiveRows(BandwidthPlus.loadToday(at: BandwidthPlus.dataURL), "today")
             }
             let live = BandwidthPlus.loadRecords()
-            try assertLiveRows(live, "combined")
-            if !live.isEmpty {
-                try expect(Aggregator.totals(live).totalBytes > 0, "combined total")
-            }
+            try expect(live.problems.isEmpty, live.problems.joined(separator: " "))
+            try assertLiveRows(live.records, "combined")
         }
     } else {
         print("skip live Bandwidth+ history")
+    }
+
+    check("a Bandwidth+ archive decodes to the stored bytes") {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let history = dir.appendingPathComponent("History")
+        try sampleHistoryArchive.write(to: history, atomically: true, encoding: .utf8)
+        let records = try BandwidthPlus.loadHistory(at: history)
+        try expect(records.count == 1, "count \(records.count)")
+        try expect(records[0].date == "2026-08-24", records[0].date)
+        try expect(records[0].network == "CafeWiFi", records[0].network)
+        try expect(records[0].downBytes == 1500, "down \(records[0].downBytes)")
+        try expect(records[0].upBytes == 25, "up \(records[0].upBytes)")
+        try expect(records[0].source == "bandwidth-plus-history", records[0].source)
+    }
+
+    check("an unreadable Bandwidth+ file is reported and the good file is kept") {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let history = dir.appendingPathComponent("History")
+        let today = dir.appendingPathComponent("Data")
+        try sampleHistoryArchive.write(to: history, atomically: true, encoding: .utf8)
+        try Data("this is not a property list".utf8).write(to: today)
+        let read = BandwidthPlus.loadRecords(historyAt: history, dataAt: today)
+        try expect(read.filesFound, "files")
+        try expect(read.records.count == 1, "count \(read.records.count)")
+        try expect(read.records[0].network == "CafeWiFi", read.records.first?.network ?? "")
+        try expect(read.records[0].downBytes == 1500, "down")
+        try expect(read.problems.count == 1, read.problems.joined(separator: " | "))
+        try expect(read.problems[0].hasPrefix("Couldn't read Bandwidth+ today."), read.problems[0])
+        let line = MeterStatus.line(
+            bandwidthProblems: read.problems,
+            storeProblem: "Couldn't read /tmp/usage.json. A copy is at /tmp/usage.json.bak.",
+            readingBandwidthPlus: false,
+            trackingThisMac: false,
+            hasRecords: true
+        )
+        try expect(
+            line == read.problems[0] + "\nCouldn't read /tmp/usage.json. A copy is at /tmp/usage.json.bak.",
+            line
+        )
+    }
+
+    check("missing Bandwidth+ files are not an error") {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let read = BandwidthPlus.loadRecords(
+            historyAt: dir.appendingPathComponent("History"),
+            dataAt: dir.appendingPathComponent("Data")
+        )
+        try expect(read.filesFound == false, "files")
+        try expect(read.problems.isEmpty, read.problems.joined(separator: " | "))
+        try expect(read.records.isEmpty, "records \(read.records.count)")
+        try expect(
+            MeterStatus.line(
+                bandwidthProblems: [],
+                storeProblem: nil,
+                readingBandwidthPlus: false,
+                trackingThisMac: true,
+                hasRecords: false
+            ) == "Tracking this Mac",
+            "tracker status"
+        )
+        try expect(
+            MeterStatus.line(
+                bandwidthProblems: [],
+                storeProblem: nil,
+                readingBandwidthPlus: true,
+                trackingThisMac: false,
+                hasRecords: true
+            ) == "Live from Bandwidth+",
+            "live status"
+        )
     }
 
     if failures.isEmpty {

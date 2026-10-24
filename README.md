@@ -255,6 +255,10 @@ also pass a CSV: `bandwidth-meter --import ~/Desktop/History.csv`.
 **Totals look a day short.** Bandwidth+ records whole days. Today is read from
 the live `Data` file and will keep growing until midnight.
 
+**The panel says it could not read Bandwidth+.** The history file is there, but
+it is not an archive this app understands. The numbers on screen are the last
+saved copy.
+
 **This week is only today.** Weeks start on Monday. If today is Monday, last
 week is the previous Monday–Sunday.
 

@@ -20,6 +20,7 @@ final class MeterController: ObservableObject {
     private var timer: Timer?
     private var previousSnapshot: InterfaceSnapshot?
     private var usingLiveTracker = false
+    private var bandwidthProblems: [String] = []
 
     init(store: UsageStore = UsageStore()) {
         self.store = store
@@ -52,12 +53,13 @@ final class MeterController: ObservableObject {
     }
 
     func bootstrap() {
-        var incoming: [DailyRecord] = []
         let plus = BandwidthPlus.loadRecords()
-        usingBandwidthPlus = !plus.isEmpty || BandwidthPlus.isInstalled
-        incoming.append(contentsOf: plus)
+        bandwidthProblems = plus.problems
+        var incoming = plus.records
+        usingBandwidthPlus = plus.problems.isEmpty && plus.filesFound
+        usingLiveTracker = plus.problems.isEmpty && !plus.filesFound
 
-        if plus.isEmpty {
+        if plus.records.isEmpty {
             let desktopCSV = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Desktop/History.csv")
             if FileManager.default.fileExists(atPath: desktopCSV.path),
@@ -70,23 +72,26 @@ final class MeterController: ObservableObject {
             try? store.save()
         }
         records = store.records
-        usingLiveTracker = !usingBandwidthPlus
         lastSync = Date()
         refreshStatus()
     }
 
     func refreshFromBandwidthPlus() {
         let plus = BandwidthPlus.loadRecords()
-        if !plus.isEmpty {
+        bandwidthProblems = plus.problems
+        if !plus.records.isEmpty {
+            if store.merge(plus.records) {
+                try? store.save()
+            }
+            records = store.records
+            lastSync = Date()
+        }
+        if plus.problems.isEmpty && plus.filesFound {
             usingBandwidthPlus = true
             usingLiveTracker = false
-            if store.merge(plus) {
-                try? store.save()
-                records = store.records
-            } else {
-                records = store.records
-            }
-            lastSync = Date()
+        } else if !plus.problems.isEmpty {
+            usingBandwidthPlus = false
+            usingLiveTracker = false
         }
         refreshStatus()
     }
@@ -165,18 +170,12 @@ final class MeterController: ObservableObject {
     }
 
     private func refreshStatus() {
-        if let problem = store.loadError {
-            status = problem
-            return
-        }
-        if usingBandwidthPlus {
-            status = "Live from Bandwidth+"
-        } else if usingLiveTracker {
-            status = "Tracking this Mac"
-        } else if records.isEmpty {
-            status = "Import a Bandwidth+ History.csv to get started"
-        } else {
-            status = "Local history"
-        }
+        status = MeterStatus.line(
+            bandwidthProblems: bandwidthProblems,
+            storeProblem: store.loadError,
+            readingBandwidthPlus: usingBandwidthPlus,
+            trackingThisMac: usingLiveTracker,
+            hasRecords: !records.isEmpty
+        )
     }
 }

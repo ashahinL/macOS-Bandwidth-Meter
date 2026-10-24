@@ -1,5 +1,22 @@
 import Foundation
 
+public struct BandwidthPlusRead: Sendable {
+    public var records: [DailyRecord]
+    public var problems: [String]
+    public var filesFound: Bool
+}
+
+public enum BandwidthPlusError: Error, LocalizedError {
+    case unrecognized
+
+    public var errorDescription: String? {
+        switch self {
+        case .unrecognized:
+            "The file is not a Bandwidth+ archive."
+        }
+    }
+}
+
 public enum BandwidthPlus {
     public static let containerID = "au.id.haroldchu.mac.Bandwidth"
 
@@ -20,22 +37,46 @@ public enum BandwidthPlus {
         FileManager.default.fileExists(atPath: historyURL.path) || FileManager.default.fileExists(atPath: dataURL.path)
     }
 
-    public static func loadRecords(now: Date = Date(), timeZone: TimeZone = .current) -> [DailyRecord] {
+    public static func loadRecords(
+        historyAt historyOverride: URL? = nil,
+        dataAt dataOverride: URL? = nil,
+        now: Date = Date(),
+        timeZone: TimeZone = .current
+    ) -> BandwidthPlusRead {
+        let historyFile = historyOverride ?? historyURL
+        let dataFile = dataOverride ?? dataURL
         var records: [DailyRecord] = []
-        if let history = try? loadHistory(at: historyURL) {
-            records.append(contentsOf: history)
+        var problems: [String] = []
+        var filesFound = false
+
+        if FileManager.default.fileExists(atPath: historyFile.path) {
+            filesFound = true
+            do {
+                records.append(contentsOf: try loadHistory(at: historyFile))
+            } catch {
+                problems.append("Couldn't read Bandwidth+ history. \(error.localizedDescription)")
+            }
         }
-        if let today = try? loadToday(at: dataURL, now: now, timeZone: timeZone) {
-            records.append(contentsOf: today)
+        if FileManager.default.fileExists(atPath: dataFile.path) {
+            filesFound = true
+            do {
+                records.append(contentsOf: try loadToday(at: dataFile, now: now, timeZone: timeZone))
+            } catch {
+                problems.append("Couldn't read Bandwidth+ today. \(error.localizedDescription)")
+            }
         }
-        return records.filter { $0.totalBytes > 0 }
+        return BandwidthPlusRead(
+            records: records.filter { $0.totalBytes > 0 },
+            problems: problems,
+            filesFound: filesFound
+        )
     }
 
     public static func loadHistory(at url: URL) throws -> [DailyRecord] {
         let data = try Data(contentsOf: url)
         let decoded = try KeyedArchive.root(from: data)
         guard let root = decoded as? [String: Any] else {
-            return []
+            throw BandwidthPlusError.unrecognized
         }
         let days = root["Days"] as? [String: Any] ?? [:]
         var records: [DailyRecord] = []
@@ -48,7 +89,9 @@ public enum BandwidthPlus {
 
     public static func loadToday(at url: URL, now: Date = Date(), timeZone: TimeZone = .current) throws -> [DailyRecord] {
         let data = try Data(contentsOf: url)
-        guard let root = try KeyedArchive.root(from: data) as? [String: Any] else { return [] }
+        guard let root = try KeyedArchive.root(from: data) as? [String: Any] else {
+            throw BandwidthPlusError.unrecognized
+        }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let date: String

@@ -55,6 +55,7 @@ struct DashboardView: View {
                 Text(meter.status)
                     .font(.system(size: 11))
                     .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             networkMenu

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- A later Bandwidth+ read keeps the larger down and up totals for that day and network. A smaller today file no longer replaces a finished history day.
+- `bandwidth-meter --network NAME` filters the default summary, not only a single period.
+- A CSV import that cannot be parsed prints the parse error.
+- A usage file that cannot be read is copied to `usage.json.bak`. It is not overwritten when that copy fails. The menu bar and the CLI show the error.
+- When a Bandwidth+ history file cannot be read, the menu bar says so and keeps the last saved totals.
+
 ## [1.0.0] - 2026-08-24
 
 ### Added
