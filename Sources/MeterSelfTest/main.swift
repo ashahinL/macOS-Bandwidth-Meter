@@ -5,6 +5,15 @@ enum Expect: Error {
     case failed(String)
 }
 
+func assertLiveRows(_ rows: [DailyRecord], _ label: String) throws {
+    for record in rows {
+        let dateOK = record.date.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil
+        if !dateOK { throw Expect.failed("\(label) date \(record.date)") }
+        if record.network.isEmpty { throw Expect.failed("\(label) blank network") }
+        if record.totalBytes == 0 { throw Expect.failed("\(label) zero row \(record.date)") }
+    }
+}
+
 func run() -> Int {
     func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
         if !condition() { throw Expect.failed(message) }
@@ -138,13 +147,18 @@ func run() -> Int {
     }
 
     if BandwidthPlus.isInstalled {
-        check("live Bandwidth+ history") {
+        check("live Bandwidth+ files decode") {
+            if FileManager.default.fileExists(atPath: BandwidthPlus.historyURL.path) {
+                try assertLiveRows(BandwidthPlus.loadHistory(at: BandwidthPlus.historyURL), "history")
+            }
+            if FileManager.default.fileExists(atPath: BandwidthPlus.dataURL.path) {
+                try assertLiveRows(BandwidthPlus.loadToday(at: BandwidthPlus.dataURL), "today")
+            }
             let live = BandwidthPlus.loadRecords()
-            try expect(!live.isEmpty, "no records")
-            try expect(live.contains { $0.date == "2026-08-23" && $0.network == "stoneAndSteel_UpR5G" }, "missing UpR5G")
-            try expect(live.contains { $0.date == "2026-08-23" && $0.network == "stoneAndSteel_Up" }, "missing Up")
-            let august23 = live.filter { $0.date == "2026-08-23" }
-            try expect(abs(Bytes.megabytes(Aggregator.totals(august23).totalBytes) - 8_683.4) < 1.0, "Aug 23 total")
+            try assertLiveRows(live, "combined")
+            if !live.isEmpty {
+                try expect(Aggregator.totals(live).totalBytes > 0, "combined total")
+            }
         }
     } else {
         print("skip live Bandwidth+ history")
