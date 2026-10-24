@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- productbuild distribution for Bandwidth Meter. scripts/build-dmg.sh fills
+     in the version and the component package name. -->
+<installer-gui-script minSpecVersion="2">
+    <title>Bandwidth Meter</title>
+    <organization>dev.ashahin</organization>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <license file="License.txt" mime-type="text/plain"/>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64"/>
+    <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+    <volume-check>
+        <allowed-os-versions>
+            <os-version min="14.0"/>
+        </allowed-os-versions>
+    </volume-check>
+    <product id="dev.ashahin.BandwidthMeter.pkg" version="@VERSION@"/>
+    <choices-outline>
+        <line choice="dev.ashahin.BandwidthMeter.pkg"/>
+    </choices-outline>
+    <choice id="dev.ashahin.BandwidthMeter.pkg" visible="false"
+            title="Bandwidth Meter"
+            description="The menu bar app in /Applications and the bandwidth-meter command in /usr/local/bin.">
+        <pkg-ref id="dev.ashahin.BandwidthMeter.pkg"/>
+    </choice>
+    <pkg-ref id="dev.ashahin.BandwidthMeter.pkg" version="@VERSION@" onConclusion="none">@COMPONENT@</pkg-ref>
+</installer-gui-script>

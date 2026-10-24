@@ -21,29 +21,26 @@ jobs:
       - name: Run test suite
         run: make test
 
-      - name: Package release zips
+      - name: Build the disk image
         run: make dist
 
-      - name: Drop leftover zip names from an existing release
+      - name: Drop old assets from an existing release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+          keep="Bandwidth-Meter-${tag#v}.dmg"
           if ! gh release view "$tag" >/dev/null 2>&1; then
             echo "no existing release for $tag"
             exit 0
           fi
+          # Re-cutting a release that shipped zips leaves them behind, so
+          # remove everything except the disk image this run uploads.
           gh release view "$tag" --json assets --jq '.assets[].name' \
             | while IFS= read -r name; do
-                [[ "$name" == *.zip ]] || continue
-                case "$name" in
-                  Bandwidth-Meter-*.app.zip|Bandwidth-Meter-*-cli-macos-*.zip|Bandwidth-Meter-*-full-macos-*.zip)
-                    ;;
-                  *)
-                    echo "removing stale asset $name"
-                    gh release delete-asset "$tag" "$name" --yes
-                    ;;
-                esac
+                [[ "$name" == "$keep" ]] && continue
+                echo "removing old asset $name"
+                gh release delete-asset "$tag" "$name" --yes
               done
 
       - name: Get version from tag
@@ -79,7 +76,7 @@ jobs:
         with:
           name: Bandwidth Meter ${{ steps.version.outputs.version }}
           body_path: ${{ runner.temp }}/release-notes.md
-          files: dist/*.zip
+          files: dist/*.dmg
           draft: false
           prerelease: false
           fail_on_unmatched_files: true

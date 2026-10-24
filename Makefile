@@ -3,7 +3,8 @@
 #   make            build the menu bar app and CLI
 #   make test       run the self-test suite
 #   make shots      render the README screenshots into docs/screenshots
-#   make dist       zip the app, the CLI, and a combined archive for GitHub Releases
+#   make dmg        build the release disk image (installer pkg + uninstaller)
+#   make dist       same as make dmg; what the release workflow runs
 #   make install    install the CLI to ~/.local/bin (and the app, if built)
 #   make uninstall  remove the CLI and the app
 
@@ -15,19 +16,14 @@ APP_BUNDLE  := $(DIST_DIR)/$(APP_NAME).app
 APP_DEST    := /Applications/$(APP_NAME).app
 CLI_DEST    := $(HOME)/.local/bin/$(CLI_NAME)
 INFO_PLIST  := Resources/Info.plist
-INSTALL_SH  := scripts/install-release.sh
 SHOTS_DIR   := docs/screenshots
 SWIFT       := swift
 VERSION     := $(shell /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' $(INFO_PLIST))
-ARCH        := $(shell uname -m)
-APP_ZIP     := $(DIST_DIR)/Bandwidth-Meter-$(VERSION).app.zip
-CLI_ZIP     := $(DIST_DIR)/Bandwidth-Meter-$(VERSION)-cli-macos-$(ARCH).zip
-BOTH_NAME   := Bandwidth-Meter-$(VERSION)-full-macos-$(ARCH)
-BOTH_ZIP    := $(DIST_DIR)/$(BOTH_NAME).zip
+DMG         := $(DIST_DIR)/Bandwidth-Meter-$(VERSION).dmg
 
 SHELL := /bin/bash
 
-.PHONY: all app cli test shots dist install install-cli install-app uninstall clean help
+.PHONY: all app cli test shots dmg dist dmg-background install install-cli install-app uninstall clean help
 
 all: app
 
@@ -36,38 +32,31 @@ app:
 	$(SWIFT) build -c release
 	@BIN_DIR="$$($(SWIFT) build -c release --show-bin-path)"; \
 	rm -rf "$(APP_BUNDLE)"; \
-	mkdir -p "$(APP_BUNDLE)/Contents/MacOS" "$(APP_BUNDLE)/Contents/Resources" "$(DIST_DIR)"; \
+	mkdir -p "$(APP_BUNDLE)/Contents/MacOS" "$(APP_BUNDLE)/Contents/Helpers" "$(APP_BUNDLE)/Contents/Resources" "$(DIST_DIR)"; \
 	cp "$$BIN_DIR/$(APP_EXEC)" "$(APP_BUNDLE)/Contents/MacOS/$(APP_EXEC)"; \
 	cp "$(INFO_PLIST)" "$(APP_BUNDLE)/Contents/Info.plist"; \
 	printf 'APPL????' > "$(APP_BUNDLE)/Contents/PkgInfo"; \
 	chmod +x "$(APP_BUNDLE)/Contents/MacOS/$(APP_EXEC)"; \
-	codesign --force --sign - "$(APP_BUNDLE)" >/dev/null; \
 	cp "$$BIN_DIR/$(CLI_NAME)" "$(DIST_DIR)/$(CLI_NAME)"; \
 	chmod +x "$(DIST_DIR)/$(CLI_NAME)"; \
-	codesign --force --sign - "$(DIST_DIR)/$(CLI_NAME)" >/dev/null
+	codesign --force --sign - "$(DIST_DIR)/$(CLI_NAME)" >/dev/null; \
+	cp "$(DIST_DIR)/$(CLI_NAME)" "$(APP_BUNDLE)/Contents/Helpers/$(CLI_NAME)"; \
+	codesign --force --sign - "$(APP_BUNDLE)" >/dev/null
 	@echo "built $(APP_BUNDLE)"
 	@echo "built $(DIST_DIR)/$(CLI_NAME)"
 
 cli: app
 
-## Zip the app, the CLI, and a combined archive (for GitHub Releases)
-dist: app
-	@find "$(DIST_DIR)" -name .DS_Store -delete
-	@rm -f "$(DIST_DIR)"/*.zip
-	@ditto -c -k --norsrc --noextattr --noacl --keepParent "$(APP_BUNDLE)" "$(APP_ZIP)"
-	@(cd "$(DIST_DIR)" && zip -X -q "$(notdir $(CLI_ZIP))" "$(CLI_NAME)")
-	@stage="$$(mktemp -d)/$(BOTH_NAME)"; \
-	mkdir -p "$$stage"; \
-	ditto --norsrc --noextattr --noacl "$(APP_BUNDLE)" "$$stage/$(APP_NAME).app"; \
-	ditto --norsrc --noextattr --noacl "$(DIST_DIR)/$(CLI_NAME)" "$$stage/$(CLI_NAME)"; \
-	chmod +x "$$stage/$(CLI_NAME)"; \
-	ditto --norsrc --noextattr --noacl "$(INSTALL_SH)" "$$stage/install.sh"; \
-	chmod +x "$$stage/install.sh"; \
-	ditto -c -k --norsrc --noextattr --noacl --keepParent "$$stage" "$(BOTH_ZIP)"; \
-	rm -rf "$$(dirname "$$stage")"
-	@echo "packed $(APP_ZIP)"
-	@echo "packed $(CLI_ZIP)"
-	@echo "packed $(BOTH_ZIP)"
+## Build the release disk image: an installer pkg and an uninstaller
+dmg: app
+	@scripts/build-dmg.sh
+
+## The release workflow and CI run this
+dist: dmg
+
+## Redraw packaging/dmg/background*.png after changing the layout
+dmg-background:
+	$(SWIFT) packaging/dmg/render-background.swift packaging/dmg
 
 ## Run the self-test suite
 test:
@@ -125,7 +114,9 @@ help:
 	@echo "  make                    build the menu bar app and CLI"
 	@echo "  make test               run the self-test suite"
 	@echo "  make shots              render README screenshots into docs/screenshots"
-	@echo "  make dist               zip app / CLI / both for GitHub Releases"
+	@echo "  make dmg                release disk image: installer pkg + uninstaller"
+	@echo "  make dist               same as make dmg (used by the release workflow)"
+	@echo "  make dmg-background     redraw the disk image background"
 	@echo "  make install            install CLI (and the app, if built)"
 	@echo "  make install-cli        CLI only, to ~/.local/bin"
 	@echo "  make install-app        menu bar app only, to /Applications"

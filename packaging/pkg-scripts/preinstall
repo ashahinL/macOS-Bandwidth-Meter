@@ -1,0 +1,19 @@
+#!/bin/sh
+# Runs as root before Installer copies Bandwidth Meter.app.
+#   $1 package path   $2 install location (/Applications)   $3 target volume (/)
+#
+# Quits a running copy so the new one can replace it. Nothing in ~/Library is
+# touched, so recorded totals and settings carry over.
+
+# Only on the boot volume; an install onto another disk has nothing running.
+[ "${3%/}" = "" ] || exit 0
+
+/usr/bin/pkill -x BandwidthMeter 2>/dev/null
+
+i=0
+while /usr/bin/pgrep -x BandwidthMeter >/dev/null 2>&1 && [ "$i" -lt 10 ]; do
+	sleep 0.5
+	i=$((i + 1))
+done
+
+exit 0

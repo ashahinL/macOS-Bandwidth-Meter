@@ -20,15 +20,22 @@ jobs:
       - name: Build the menu bar app and CLI
         run: make app
 
-      - name: Package release zips
+      - name: Build the disk image
         run: make dist
 
-      - name: Verify the app bundle and zips
+      - name: Verify the app bundle and disk image
         run: |
           plutil -lint "dist/Bandwidth Meter.app/Contents/Info.plist"
           file "dist/Bandwidth Meter.app/Contents/MacOS/BandwidthMeter"
           file dist/bandwidth-meter
           test -x dist/bandwidth-meter
-          unzip -l dist/Bandwidth-Meter-*.app.zip | grep 'Bandwidth Meter.app'
-          unzip -l dist/Bandwidth-Meter-*-cli-macos-*.zip | grep bandwidth-meter
-          unzip -l dist/Bandwidth-Meter-*-full-macos-*.zip | grep install.sh
+          test -x "dist/Bandwidth Meter.app/Contents/Helpers/bandwidth-meter"
+          dmg=$(ls dist/Bandwidth-Meter-*.dmg)
+          hdiutil imageinfo "$dmg" | grep -q 'Format: ULFO'
+          mnt=$(mktemp -d)
+          hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$mnt" "$dmg"
+          ls -la "$mnt"
+          installer -pkginfo -verbose -pkg "$mnt/Install Bandwidth Meter.pkg"
+          pkgutil --payload-files "$mnt/Install Bandwidth Meter.pkg"
+          codesign --verify --strict --deep "$mnt/Uninstall Bandwidth Meter.app"
+          hdiutil detach "$mnt"

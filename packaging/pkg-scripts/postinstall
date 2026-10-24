@@ -1,0 +1,49 @@
+#!/bin/sh
+# Runs as root after Installer copies Bandwidth Meter.app.
+#   $1 package path   $2 install location (/Applications)   $3 target volume (/)
+#
+# 1. Copies the bandwidth-meter command from the app bundle to
+#    /usr/local/bin, creating that folder if it is missing. An existing
+#    /usr/local/bin keeps its owner and permissions.
+# 2. Opens the app for the person at the screen, so the menu bar item shows up
+#    straight away. Skipped for command-line installs (`installer -pkg`) and
+#    for installs onto another volume.
+
+APP="${2%/}/Bandwidth Meter.app"
+HELPER="$APP/Contents/Helpers/bandwidth-meter"
+BIN_DIR="${3%/}/usr/local/bin"
+CLI="$BIN_DIR/bandwidth-meter"
+
+if [ ! -x "$HELPER" ]; then
+	echo "postinstall: $HELPER is missing" >&2
+	exit 1
+fi
+
+if [ ! -d "$BIN_DIR" ]; then
+	/bin/mkdir -p -m 755 "$BIN_DIR" || exit 1
+fi
+
+tmp="$BIN_DIR/.bandwidth-meter.$$"
+/bin/cp "$HELPER" "$tmp" || exit 1
+/bin/chmod 755 "$tmp"
+if [ "$(/usr/bin/id -u)" = 0 ]; then
+	/usr/sbin/chown root:wheel "$tmp"
+fi
+# Replace an old copy or a symlink, never write through it.
+/bin/rm -f "$CLI"
+/bin/mv -f "$tmp" "$CLI" || { /bin/rm -f "$tmp"; exit 1; }
+
+if [ "${3%/}" = "" ] && [ "${COMMAND_LINE_INSTALL:-}" != "1" ]; then
+	user="$(/usr/bin/stat -f %Su /dev/console 2>/dev/null)"
+	case "$user" in
+		"" | root | loginwindow | _mbsetupuser) ;;
+		*)
+			uid="$(/usr/bin/id -u "$user" 2>/dev/null)"
+			if [ -n "$uid" ]; then
+				/bin/launchctl asuser "$uid" /usr/bin/sudo -u "$user" /usr/bin/open "$APP" >/dev/null 2>&1 || true
+			fi
+			;;
+	esac
+fi
+
+exit 0
