@@ -154,6 +154,35 @@ func run() -> Int {
         try expect(abs(Bytes.megabytes(Aggregator.totals(parsed).totalBytes) - 11_253.6) < 0.2, "csv total")
     }
 
+    check("default summary respects the network filter") {
+        let rows = [
+            DailyRecord(date: "2026-08-24", network: "Home", downBytes: 2_000_000, upBytes: 0),
+            DailyRecord(date: "2026-08-24", network: "Work", downBytes: 9_000_000, upBytes: 0),
+        ]
+        let filtered = try Report.render(
+            records: rows,
+            period: nil,
+            network: "Home",
+            now: monday,
+            settings: settings,
+            timeZone: timeZone
+        )
+        try expect(filtered.contains("Network: Home"), filtered)
+        try expect(filtered.contains("2.0 MB"), filtered)
+        try expect(!filtered.contains("Work"), filtered)
+        try expect(!filtered.contains("9.0 MB"), filtered)
+
+        let all = try Report.render(
+            records: rows,
+            period: nil,
+            now: monday,
+            settings: settings,
+            timeZone: timeZone
+        )
+        try expect(all.contains("Work"), all)
+        try expect(all.contains("9.0 MB"), all)
+    }
+
     check("CLI period tokens") {
         try expect(PeriodKind.parseCLI("week") == .thisWeek, "week")
         try expect(PeriodKind.parseCLI("last-month") == .lastMonth, "last-month")

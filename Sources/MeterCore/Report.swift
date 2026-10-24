@@ -3,6 +3,7 @@ import Foundation
 public enum Report {
     public static func text(
         records: [DailyRecord],
+        network: String? = nil,
         now: Date = Date(),
         settings: MeterSettings = .default,
         timeZone: TimeZone = .current,
@@ -18,14 +19,17 @@ public enum Report {
         if let sourceNote {
             lines.append(sourceNote)
         }
+        if let network {
+            lines.append("Network: \(network)")
+        }
         lines.append("")
 
         for kind in kinds {
-            let report = Aggregator.report(records, kind: kind, now: now, settings: settings, timeZone: timeZone)
+            let report = Aggregator.report(records, kind: kind, network: network, now: now, settings: settings, timeZone: timeZone)
             lines.append(summaryLine(kind.title, report.totals))
         }
 
-        let month = Aggregator.report(records, kind: .thisMonth, now: now, settings: settings, timeZone: timeZone)
+        let month = Aggregator.report(records, kind: .thisMonth, network: network, now: now, settings: settings, timeZone: timeZone)
         appendBreakdown(&lines, title: "This month by network", networks: month.networks)
         appendDays(&lines, title: "This month by day", days: month.days)
 
@@ -88,6 +92,48 @@ public enum Report {
         if let network { payload["network"] = network }
         let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
         return (String(data: data, encoding: .utf8) ?? "{}") + "\n"
+    }
+
+    public static func render(
+        records: [DailyRecord],
+        period: PeriodKind?,
+        network: String? = nil,
+        asJSON: Bool = false,
+        now: Date = Date(),
+        settings: MeterSettings = .default,
+        timeZone: TimeZone = .current,
+        sourceNote: String? = nil
+    ) throws -> String {
+        if asJSON {
+            return try json(
+                records: records,
+                kind: period,
+                network: network,
+                now: now,
+                settings: settings,
+                timeZone: timeZone,
+                sourceNote: sourceNote
+            )
+        }
+        if let period {
+            return detail(
+                period,
+                records: records,
+                network: network,
+                now: now,
+                settings: settings,
+                timeZone: timeZone,
+                sourceNote: sourceNote
+            )
+        }
+        return text(
+            records: records,
+            network: network,
+            now: now,
+            settings: settings,
+            timeZone: timeZone,
+            sourceNote: sourceNote
+        )
     }
 
     public static let helpText = """

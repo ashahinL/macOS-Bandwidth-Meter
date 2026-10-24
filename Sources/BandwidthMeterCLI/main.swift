@@ -73,36 +73,15 @@ func main() -> Int32 {
     }
 
     do {
-        if asJSON {
-            let text = try Report.json(
-                records: loaded.records,
-                kind: period,
-                network: network,
-                settings: loaded.settings,
-                sourceNote: loaded.sourceNote
-            )
-            fputs(text, stdout)
-        } else if let period {
-            fputs(
-                Report.detail(
-                    period,
-                    records: loaded.records,
-                    network: network,
-                    settings: loaded.settings,
-                    sourceNote: loaded.sourceNote
-                ),
-                stdout
-            )
-        } else {
-            fputs(
-                Report.text(
-                    records: loaded.records,
-                    settings: loaded.settings,
-                    sourceNote: loaded.sourceNote
-                ),
-                stdout
-            )
-        }
+        let text = try Report.render(
+            records: loaded.records,
+            period: period,
+            network: network,
+            asJSON: asJSON,
+            settings: loaded.settings,
+            sourceNote: loaded.sourceNote
+        )
+        fputs(text, stdout)
         return 0
     } catch {
         fputs("bandwidth-meter: \(error.localizedDescription)\n", stderr)
