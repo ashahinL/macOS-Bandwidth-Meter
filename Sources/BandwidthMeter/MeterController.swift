@@ -165,6 +165,10 @@ final class MeterController: ObservableObject {
     }
 
     private func refreshStatus() {
+        if let problem = store.loadError {
+            status = problem
+            return
+        }
         if usingBandwidthPlus {
             status = "Live from Bandwidth+"
         } else if usingLiveTracker {

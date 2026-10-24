@@ -25,9 +25,17 @@ struct BandwidthMeterApp: App {
     private static func runCLIIfNeeded() {
         let args = CommandLine.arguments
         guard args.contains("--report") || args.contains("report") else { return }
-        let loaded = UsageLoader.load()
-        print(Report.text(records: loaded.records, settings: loaded.settings, sourceNote: loaded.sourceNote), terminator: "")
-        exit(0)
+        do {
+            let loaded = try UsageLoader.load()
+            for problem in loaded.problems {
+                fputs("bandwidth-meter: \(problem)\n", stderr)
+            }
+            print(Report.text(records: loaded.records, settings: loaded.settings, sourceNote: loaded.sourceNote), terminator: "")
+            exit(loaded.problems.isEmpty ? 0 : 1)
+        } catch {
+            fputs("bandwidth-meter: \(error.localizedDescription)\n", stderr)
+            exit(1)
+        }
     }
 }
 

@@ -66,7 +66,16 @@ func main() -> Int32 {
         return 2
     }
 
-    let loaded = UsageLoader.load(csvURL: csvURL)
+    let loaded: LoadedUsage
+    do {
+        loaded = try UsageLoader.load(csvURL: csvURL)
+    } catch {
+        fputs("bandwidth-meter: \(error.localizedDescription)\n", stderr)
+        return 1
+    }
+    for problem in loaded.problems {
+        fputs("bandwidth-meter: \(problem)\n", stderr)
+    }
     if loaded.records.isEmpty {
         fputs("bandwidth-meter: no usage yet. Keep Bandwidth+ running, then try again.\n", stderr)
         return 1
@@ -82,7 +91,7 @@ func main() -> Int32 {
             sourceNote: loaded.sourceNote
         )
         fputs(text, stdout)
-        return 0
+        return loaded.problems.isEmpty ? 0 : 1
     } catch {
         fputs("bandwidth-meter: \(error.localizedDescription)\n", stderr)
         return 1

@@ -4,16 +4,20 @@ public struct LoadedUsage: Sendable {
     public var records: [DailyRecord]
     public var settings: MeterSettings
     public var sourceNote: String
+    public var problems: [String]
 }
 
 public enum UsageLoader {
-    public static func load(csvURL: URL? = nil, persist: Bool = true) -> LoadedUsage {
-        let store = UsageStore()
+    public static func load(csvURL: URL? = nil, persist: Bool = true, store: UsageStore? = nil) throws -> LoadedUsage {
+        let active = store ?? UsageStore()
+        var problems: [String] = []
+        if let loadError = active.loadError {
+            problems.append(loadError)
+        }
         var incoming = BandwidthPlus.loadRecords()
         if let csvURL {
-            if let csv = try? CSV.parseFile(at: csvURL, source: "csv") {
-                incoming.append(contentsOf: csv)
-            }
+            let csv = try CSV.parseFile(at: csvURL, source: "csv")
+            incoming.append(contentsOf: csv)
         } else if incoming.isEmpty {
             let desktop = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop/History.csv")
             if FileManager.default.fileExists(atPath: desktop.path),
@@ -21,9 +25,9 @@ public enum UsageLoader {
                 incoming.append(contentsOf: csv)
             }
         }
-        _ = store.merge(incoming)
+        _ = active.merge(incoming)
         if persist {
-            try? store.save()
+            try active.save()
         }
         let note: String
         if BandwidthPlus.isInstalled {
@@ -33,6 +37,6 @@ public enum UsageLoader {
         } else {
             note = "Source: local store"
         }
-        return LoadedUsage(records: store.records, settings: store.settings, sourceNote: note)
+        return LoadedUsage(records: active.records, settings: active.settings, sourceNote: note, problems: problems)
     }
 }

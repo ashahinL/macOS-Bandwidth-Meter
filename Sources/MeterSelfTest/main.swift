@@ -5,6 +5,13 @@ enum Expect: Error {
     case failed(String)
 }
 
+func makeTempDirectory() throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("bandwidth-meter-test-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    return url
+}
+
 func assertLiveRows(_ rows: [DailyRecord], _ label: String) throws {
     for record in rows {
         let dateOK = record.date.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil
@@ -188,6 +195,89 @@ func run() -> Int {
         try expect(PeriodKind.parseCLI("last-month") == .lastMonth, "last-month")
         try expect(PeriodKind.parseCLI("30d") == .last30Days, "30d")
         try expect(PeriodKind.parseCLI("nope") == nil, "unknown")
+    }
+
+    check("a bad CSV import is reported") {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let csv = dir.appendingPathComponent("bad.csv")
+        try "hello\n".write(to: csv, atomically: true, encoding: .utf8)
+        let store = UsageStore(fileURL: dir.appendingPathComponent("usage.json"))
+        do {
+            _ = try UsageLoader.load(csvURL: csv, persist: false, store: store)
+            try expect(false, "load should throw")
+        } catch {
+            try expect(
+                error.localizedDescription == "Expected a header row with Date, Network, Down (MB), Up (MB).",
+                error.localizedDescription
+            )
+        }
+    }
+
+    check("a CSV import is saved") {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let csv = dir.appendingPathComponent("History.csv")
+        try """
+        Date,Network,Down (MB),Up (MB),Total (MB)
+        2026-08-24,CafeWiFi,1.5,0.5,2.0
+        """.write(to: csv, atomically: true, encoding: .utf8)
+        let storeURL = dir.appendingPathComponent("usage.json")
+        let loaded = try UsageLoader.load(csvURL: csv, persist: true, store: UsageStore(fileURL: storeURL))
+        let match = loaded.records.first { $0.date == "2026-08-24" && $0.network == "CafeWiFi" }
+        try expect(match?.downBytes == 1_500_000, "down \(match?.downBytes ?? 0)")
+        try expect(match?.upBytes == 500_000, "up \(match?.upBytes ?? 0)")
+        let saved = UsageStore(fileURL: storeURL)
+        let savedMatch = saved.records.first { $0.date == "2026-08-24" && $0.network == "CafeWiFi" }
+        try expect(savedMatch?.downBytes == 1_500_000, "saved down")
+        try expect(saved.loadError == nil, saved.loadError ?? "nil")
+    }
+
+    check("a corrupt usage file is copied aside before save") {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("usage.json")
+        try "{".write(to: url, atomically: true, encoding: .utf8)
+        let store = UsageStore(fileURL: url)
+        try expect(store.loadError?.contains("Couldn't read \(url.path)") == true, store.loadError ?? "nil")
+        try expect(store.loadError?.contains("\(url.path).bak") == true, store.loadError ?? "nil")
+        let backup = URL(fileURLWithPath: url.path + ".bak")
+        let backupBefore = try String(contentsOf: backup, encoding: .utf8)
+        let originalBefore = try String(contentsOf: url, encoding: .utf8)
+        try expect(backupBefore == "{", "backup bytes \(backupBefore)")
+        try expect(originalBefore == "{", "original before save")
+        let loaded = try UsageLoader.load(persist: false, store: store)
+        try expect(loaded.problems == [store.loadError ?? ""], loaded.problems.joined(separator: " | "))
+        try store.save()
+        let backupAfter = try String(contentsOf: backup, encoding: .utf8)
+        try expect(backupAfter == "{", "backup after save \(backupAfter)")
+        let reloaded = UsageStore(fileURL: url)
+        try expect(reloaded.loadError == nil, reloaded.loadError ?? "nil")
+        try expect(reloaded.records == store.records, "saved rows should reload")
+    }
+
+    check("an unreadable usage file is not replaced when backup fails") {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dir.path) }
+        let url = dir.appendingPathComponent("usage.json")
+        try "{".write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: dir.path)
+        let store = UsageStore(fileURL: url)
+        try expect(store.loadError?.contains("left in place") == true, store.loadError ?? "nil")
+        try expect(FileManager.default.fileExists(atPath: url.path + ".bak") == false, "backup should not exist")
+        do {
+            try store.save()
+            try expect(false, "save should throw")
+        } catch {
+            try expect(
+                error.localizedDescription == "Refusing to replace \(url.path) because it could not be read and no backup was made.",
+                error.localizedDescription
+            )
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dir.path)
+        let original = try String(contentsOf: url, encoding: .utf8)
+        try expect(original == "{", "original bytes \(original)")
     }
 
     check("compact format") {

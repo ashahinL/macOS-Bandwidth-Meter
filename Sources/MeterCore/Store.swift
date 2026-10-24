@@ -1,20 +1,47 @@
 import Foundation
 
+public enum StoreSaveError: Error, LocalizedError {
+    case refusingToReplaceUnreadableFile(URL)
+
+    public var errorDescription: String? {
+        switch self {
+        case .refusingToReplaceUnreadableFile(let url):
+            "Refusing to replace \(url.path) because it could not be read and no backup was made."
+        }
+    }
+}
+
 public final class UsageStore: @unchecked Sendable {
     public private(set) var records: [DailyRecord]
     public var settings: MeterSettings
     public let fileURL: URL
+    public private(set) var loadError: String?
+    private var allowSave: Bool
 
     public init(fileURL: URL? = nil) {
         let url = fileURL ?? Self.defaultURL
         self.fileURL = url
-        if let data = try? Data(contentsOf: url),
-           let decoded = try? JSONDecoder().decode(PersistedStore.self, from: data) {
+        self.records = []
+        self.settings = .default
+        self.loadError = nil
+        self.allowSave = true
+
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+
+        do {
+            let data = try Data(contentsOf: url)
+            let decoded = try JSONDecoder().decode(PersistedStore.self, from: data)
             self.records = decoded.records
             self.settings = decoded.settings
-        } else {
-            self.records = []
-            self.settings = .default
+        } catch {
+            let detail = Self.describe(error)
+            if let backup = Self.preserveCorruptFile(at: url) {
+                self.loadError = "Couldn't read \(url.path). \(detail) A copy is at \(backup.path). Billing day and quota were reset."
+                self.allowSave = true
+            } else {
+                self.loadError = "Couldn't read \(url.path). \(detail) The file was left in place."
+                self.allowSave = false
+            }
         }
     }
 
@@ -57,6 +84,9 @@ public final class UsageStore: @unchecked Sendable {
     }
 
     public func save() throws {
+        if !allowSave {
+            throw StoreSaveError.refusingToReplaceUnreadableFile(fileURL)
+        }
         let payload = PersistedStore(records: records, settings: settings)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -66,5 +96,40 @@ public final class UsageStore: @unchecked Sendable {
             withIntermediateDirectories: true
         )
         try data.write(to: fileURL, options: [.atomic])
+    }
+
+    private static func describe(_ error: Error) -> String {
+        guard let decoding = error as? DecodingError else {
+            return error.localizedDescription
+        }
+        switch decoding {
+        case .dataCorrupted(let context):
+            return context.debugDescription
+        case .keyNotFound(let key, let context):
+            return "Missing key \(key.stringValue). \(context.debugDescription)"
+        case .typeMismatch(_, let context):
+            return context.debugDescription
+        case .valueNotFound(_, let context):
+            return context.debugDescription
+        @unknown default:
+            return decoding.localizedDescription
+        }
+    }
+
+    private static func preserveCorruptFile(at url: URL) -> URL? {
+        let primary = URL(fileURLWithPath: url.path + ".bak")
+        let destination: URL
+        if FileManager.default.fileExists(atPath: primary.path) {
+            let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            destination = URL(fileURLWithPath: "\(url.path).\(stamp).bak")
+        } else {
+            destination = primary
+        }
+        do {
+            try FileManager.default.copyItem(at: url, to: destination)
+            return destination
+        } catch {
+            return nil
+        }
     }
 }
