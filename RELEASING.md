@@ -52,9 +52,8 @@ name, `Bandwidth-Meter-x.y.z.dmg`.
 5. **Refresh the screenshots** if the UI changed: `make shots`, then look at
    every image in `docs/screenshots/`.
 6. **Build it locally:** `make dmg`. Open `dist/Bandwidth-Meter-x.y.z.dmg`,
-   run **Install Bandwidth Meter**, and check that the app opens and that
-   `bandwidth-meter` works in a new Terminal window. Then try **Uninstall
-   Bandwidth Meter** and install again.
+   run **Install**, and check that the app opens and that `bandwidth-meter`
+   works in a new Terminal window. Then try **Uninstall** and install again.
 7. **Commit** as "Prepare version x.y.z" and push `main`. Wait for CI.
 
 ## Ship
@@ -83,7 +82,7 @@ screenshot, and the disk image are there.
 `scripts/build-dmg.sh` takes the app from `make app` and builds, under
 `.build/package/`:
 
-- **Install Bandwidth Meter.pkg**, a product archive (`pkgbuild` plus
+- **Install.pkg**, a product archive (`pkgbuild` plus
   `productbuild`, id `dev.ashahin.BandwidthMeter.pkg`) with a welcome page, the
   MIT license, and a closing page. The payload is the app, installed to
   `/Applications`. The CLI rides inside the app at
@@ -91,18 +90,25 @@ screenshot, and the disk image are there.
   `/usr/local/bin`, so the package never changes that folder's owner or
   permissions. `preinstall` quits a running copy. `postinstall` opens the app
   for the signed-in user unless the install came from `sudo installer`.
-- **Uninstall Bandwidth Meter.app**, an AppleScript applet that runs
+- **Uninstall.app**, an AppleScript applet that runs
   `packaging/uninstaller/uninstall.sh`.
 
 Both go into `dist/Bandwidth-Meter-x.y.z.dmg` (ULFO, HFS+, volume name
 "Bandwidth Meter"). dmgbuild, pinned to 1.6.7 in a venv under `.build/tools/`,
-writes the window layout and background without driving Finder. If it can't be
+writes the window layout and background without driving Finder.
+`packaging/dmg/finish-layout.py` then moves the background into `.background/`
+and sets the hidden flag on the dot files. `settings.py` also parks them far
+outside the window, so they stay out of sight for people who show hidden files.
+The short names keep each label on one line, even with "Show all filename
+extensions" on. If dmgbuild can't be
 installed, the script warns and falls back to a plain `hdiutil` image;
 `DMG_LAYOUT=plain` forces that. The script then mounts the image and checks the
 pkg payload and the uninstaller's signature.
 
 The background comes from `packaging/dmg/background.png` and `@2x`. Run
 `make dmg-background` after changing `packaging/dmg/render-background.swift`.
+Keep the bottom 80 points of the artwork empty: Finder lays its own path bar
+and status bar over the window when they're on, whatever the layout asks for.
 
 ### Signing and notarization
 

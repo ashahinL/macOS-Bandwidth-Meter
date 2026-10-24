@@ -35,7 +35,8 @@ jobs:
           mnt=$(mktemp -d)
           hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$mnt" "$dmg"
           ls -la "$mnt"
-          installer -pkginfo -verbose -pkg "$mnt/Install Bandwidth Meter.pkg"
-          pkgutil --payload-files "$mnt/Install Bandwidth Meter.pkg"
-          codesign --verify --strict --deep "$mnt/Uninstall Bandwidth Meter.app"
+          installer -pkginfo -verbose -pkg "$mnt/Install.pkg"
+          pkgutil --payload-files "$mnt/Install.pkg"
+          codesign --verify --strict --deep "$mnt/Uninstall.app"
+          test -f "$mnt/.background/background.tiff"
           hdiutil detach "$mnt"

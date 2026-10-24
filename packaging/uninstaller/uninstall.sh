@@ -1,5 +1,5 @@
 #!/bin/sh
-# Does the work for "Uninstall Bandwidth Meter.app". The app asks first and
+# Does the work for "Uninstall.app" on the disk image. The app asks first and
 # runs the `system` step with administrator rights.
 #
 #   uninstall.sh status                 list what is installed, one per line:

@@ -5,7 +5,10 @@
 //   swift packaging/dmg/render-background.swift <output-dir>
 //
 // Writes background.png (640 x 400) and background@2x.png (1280 x 800).
-// The icon centres in settings.py are (190, 200) and (450, 200).
+// The icon centres in settings.py are (190, 170) and (450, 170).
+//
+// Keep the bottom 80 points empty. Finder lays its own path bar and status
+// bar over the window when those are on globally, whatever the .DS_Store says.
 
 import AppKit
 
@@ -56,18 +59,19 @@ func render(scale: CGFloat) -> Data {
          size: 13, weight: .regular, color: muted, centreX: width / 2, top: 66, maxWidth: 600)
 
     // Soft tile behind the installer so it reads as the main action.
-    let tile = NSBezierPath(roundedRect: NSRect(x: 190 - 85, y: 200 - 75, width: 170, height: 170), xRadius: 18, yRadius: 18)
+    let tile = NSBezierPath(roundedRect: NSRect(x: 190 - 85, y: 170 - 75, width: 170, height: 160), xRadius: 18, yRadius: 18)
     accent.withAlphaComponent(0.08).setFill()
     tile.fill()
     accent.withAlphaComponent(0.25).setStroke()
     tile.lineWidth = 1
     tile.stroke()
 
-    NSColor(srgbRed: 0.85, green: 0.87, blue: 0.9, alpha: 1).setFill()
-    NSRect(x: 40, y: 318, width: width - 80, height: 1).fill()
-
+    // Gatekeeper hint right under the icons, clear of Finder's bottom bars.
+    let note = NSBezierPath(roundedRect: NSRect(x: 50, y: 270, width: width - 100, height: 46), xRadius: 10, yRadius: 10)
+    NSColor(srgbRed: 0.91, green: 0.925, blue: 0.945, alpha: 1).setFill()
+    note.fill()
     draw("macOS says it can't verify the installer? Open System Settings › Privacy & Security,\nscroll down to Security, and click Open Anyway.",
-         size: 11.5, weight: .regular, color: muted, centreX: width / 2, top: 332, maxWidth: 580)
+         size: 11.5, weight: .regular, color: muted, centreX: width / 2, top: 277, maxWidth: 560)
 
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!

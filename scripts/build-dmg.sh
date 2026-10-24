@@ -2,9 +2,10 @@
 # Build dist/Bandwidth-Meter-<version>.dmg from the app `make app` built.
 #
 # The disk image holds:
-#   Install Bandwidth Meter.pkg     app to /Applications, CLI to /usr/local/bin
-#   Uninstall Bandwidth Meter.app   asks, then removes both (and, if you say
-#                                   so, the saved data in ~/Library)
+#   Install.pkg     app to /Applications, CLI to /usr/local/bin
+#   Uninstall.app   asks, then removes both (and, if you say so, the saved
+#                   data in ~/Library)
+#   .background/    the window artwork (hidden)
 #
 # Unsigned by default. Set these to sign and notarize (see RELEASING.md):
 #   DEVELOPER_ID_APP        "Developer ID Application: Name (TEAMID)", signs the
@@ -29,8 +30,10 @@ WORK="${WORK_DIR:-.build/package}"
 DMGBUILD_VERSION="1.6.7"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
 DMG="$DIST_DIR/Bandwidth-Meter-$VERSION.dmg"
-PKG_NAME="Install $APP_NAME.pkg"
-UNINSTALLER_NAME="Uninstall $APP_NAME.app"
+# Short names so the Finder labels fit on one line, even with "Show all
+# filename extensions" on. The window title and artwork name the app.
+PKG_NAME="Install.pkg"
+UNINSTALLER_NAME="Uninstall.app"
 
 : "${DEVELOPER_ID_APP:=}"
 : "${DEVELOPER_ID_INSTALLER:=}"
@@ -172,11 +175,28 @@ fi
 mkdir -p "$DIST_DIR"
 if [[ "$DMG_LAYOUT" != "plain" && -n "${DMGBUILD:-}" ]]; then
 	step "building $DMG with dmgbuild"
+	rw="$WORK/layout-rw.dmg"
 	"$DMGBUILD" -s packaging/dmg/settings.py \
 		-D pkg="$WORK/$PKG_NAME" \
 		-D uninstaller="$UNINSTALLER" \
 		-D background="$WORK/background.tiff" \
-		"$APP_NAME" "$DMG" >/dev/null
+		-D format=UDRW \
+		"$APP_NAME" "$rw" >/dev/null
+	# Move the background into .background/ and hide the dot files, then
+	# compress. dmgbuild shrinks the image to the minimum, so give it room.
+	hdiutil resize -quiet -size 16m "$rw"
+	rwmnt="$(mktemp -d "${TMPDIR:-/tmp}/bandwidth-meter-rw.XXXXXX")"
+	hdiutil attach -quiet -nobrowse -owners off -noautoopen -mountpoint "$rwmnt" "$rw"
+	finish_status=0
+	"$(dirname "$DMGBUILD")/python" packaging/dmg/finish-layout.py "$rwmnt" >/dev/null || finish_status=1
+	rm -rf "$rwmnt/.fseventsd" "$rwmnt/.Trashes"
+	sync
+	hdiutil detach -quiet "$rwmnt" || hdiutil detach -quiet -force "$rwmnt"
+	rmdir "$rwmnt" 2>/dev/null || true
+	[[ $finish_status -eq 0 ]] || { echo "finish-layout.py failed" >&2; exit 1; }
+	hdiutil resize -quiet -sectors min "$rw"
+	hdiutil convert -quiet "$rw" -format ULFO -ov -o "$DMG"
+	rm -f "$rw"
 else
 	if [[ "$DMG_LAYOUT" != "plain" ]]; then
 		echo "warning: dmgbuild is not available, so the disk image has no window layout" >&2
@@ -219,6 +239,10 @@ check_mounted() {
 	if grep -q '/\._' <<<"$payload"; then
 		fail "the pkg payload has AppleDouble files"
 		return 1
+	fi
+	if [[ "$DMG_LAYOUT" != "plain" && -n "${DMGBUILD:-}" ]]; then
+		[[ -f "$mnt/.background/background.tiff" && ! -e "$mnt/.background.tiff" ]] ||
+			fail "the background isn't in .background/" || return 1
 	fi
 }
 mnt="$(mktemp -d "${TMPDIR:-/tmp}/bandwidth-meter-dmg.XXXXXX")"

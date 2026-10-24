@@ -84,7 +84,7 @@ Get **`Bandwidth-Meter-<version>.dmg`** from
 [Releases](https://github.com/ashahinL/macOS-Bandwidth-Meter/releases). You
 don't need Xcode or Terminal.
 
-1. Open the disk image and double-click **Install Bandwidth Meter**.
+1. Open the disk image and double-click **Install**.
 2. Click through the installer and enter your password when it asks.
 
 The installer puts **Bandwidth Meter.app** in `/Applications` and the
@@ -97,10 +97,10 @@ it:
 
 - **macOS 15 or later:** click **Done** on the warning. Open **System Settings ›
   Privacy & Security**, scroll down to **Security**, and click **Open Anyway**
-  next to "Install Bandwidth Meter.pkg". Confirm with your password and the
+  next to "Install.pkg". Confirm with your password and the
   installer opens. Right-click › Open no longer gets past this check on
   macOS 15.
-- **macOS 14:** right-click **Install Bandwidth Meter**, choose **Open**, and
+- **macOS 14:** right-click **Install**, choose **Open**, and
   click **Open** again.
 
 You only do this once per download. The app and the command it installs open
@@ -127,7 +127,7 @@ make install              # CLI to ~/.local/bin, app to /Applications
 
 ### Uninstall
 
-Open the disk image and double-click **Uninstall Bandwidth Meter**. It lists
+Open the disk image and double-click **Uninstall**. It lists
 what it found, asks for your password, and removes the app, the
 `bandwidth-meter` command, and the installer's receipt. It then asks whether
 to delete your saved totals and settings as well. The default is to keep them.
@@ -414,7 +414,7 @@ Resources/Info.plist            app bundle metadata
 scripts/build-dmg.sh            builds the installer pkg, the uninstaller, and the disk image
 packaging/pkg-scripts/          preinstall and postinstall for the pkg
 packaging/installer/            installer welcome, conclusion, and distribution
-packaging/uninstaller/          the Uninstall Bandwidth Meter applet
+packaging/uninstaller/          the Uninstall applet
 packaging/dmg/                  disk image layout and background
 docs/release-notes/             GitHub release notes, one file per version
 Makefile                        build, test, shots, dmg, install

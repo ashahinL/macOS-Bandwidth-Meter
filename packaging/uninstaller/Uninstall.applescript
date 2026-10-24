@@ -1,6 +1,6 @@
 -- Uninstall Bandwidth Meter
 --
--- Compiled into "Uninstall Bandwidth Meter.app" by scripts/build-dmg.sh, with
+-- Compiled into "Uninstall.app" by scripts/build-dmg.sh, with
 -- uninstall.sh in its Resources. It lists what it found, asks before removing
 -- anything, and asks separately before deleting saved totals and settings.
 
