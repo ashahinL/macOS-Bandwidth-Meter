@@ -50,45 +50,35 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
+      - name: Write release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          notes="docs/release-notes/${VERSION}.md"
+          out="$RUNNER_TEMP/release-notes.md"
+          if [ -f "$notes" ]; then
+            cp "$notes" "$out"
+          else
+            echo "no $notes, using the CHANGELOG section for $VERSION"
+            awk -v v="$VERSION" '
+              index($0, "## [" v "]") == 1 { on = 1; next }
+              on && /^## \[/ { exit }
+              on && /^\[[^]]+\]: / { exit }
+              on { print }
+            ' CHANGELOG.md > "$out"
+          fi
+          if ! grep -q '[^[:space:]]' "$out"; then
+            echo "::error::No release notes for $VERSION. Add $notes or a CHANGELOG section."
+            exit 1
+          fi
+          cat .github/release-downloads.md >> "$out"
+          cat "$out"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Bandwidth Meter ${{ steps.version.outputs.version }}
-          body: |
-            Weekly and monthly bandwidth totals from [Bandwidth+](https://apps.apple.com/app/bandwidth/id490461369) daily history.
-
-            Keep Bandwidth+ running for capture. Download one of the zips below — you do not need Xcode.
-
-            ## Downloads
-
-            | File | What you get |
-            |---|---|
-            | `Bandwidth-Meter-*-full-macos-arm64.zip` | **Both** — app, CLI, and `install.sh` |
-            | `Bandwidth-Meter-*.app.zip` | Menu bar app only |
-            | `Bandwidth-Meter-*-cli-macos-arm64.zip` | CLI only |
-
-            Apple Silicon, macOS 14+. Not notarized: the combined zip's `./install.sh` clears quarantine. Otherwise right-click the app → Open, or `xattr -cr` the files you copied.
-
-            ### Both
-            ```sh
-            unzip Bandwidth-Meter-*-full-macos-arm64.zip
-            cd Bandwidth-Meter-*-full-macos-arm64
-            ./install.sh
-            ```
-
-            ### App only
-            Unzip and drag **Bandwidth Meter.app** to `/Applications`.
-
-            ### CLI only
-            ```sh
-            unzip Bandwidth-Meter-*-cli-macos-arm64.zip
-            mkdir -p ~/.local/bin
-            cp bandwidth-meter ~/.local/bin/
-            chmod +x ~/.local/bin/bandwidth-meter
-            xattr -cr ~/.local/bin/bandwidth-meter
-            ```
-
-            See the [changelog](https://github.com/ashahinL/macOS-Bandwidth-Meter/blob/main/CHANGELOG.md) for what changed.
+          body_path: ${{ runner.temp }}/release-notes.md
           files: dist/*.zip
           draft: false
           prerelease: false
