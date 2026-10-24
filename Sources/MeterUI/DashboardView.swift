@@ -3,7 +3,7 @@ import MeterCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct DashboardView: View {
+public struct DashboardView: View {
     @EnvironmentObject private var meter: MeterController
     @State private var showSettings = false
     @State private var actionError: String?
@@ -13,7 +13,9 @@ struct DashboardView: View {
     private let primaryPeriods: [PeriodKind] = [.today, .thisWeek, .thisMonth, .allTime]
     private let morePeriods: [PeriodKind] = [.yesterday, .lastWeek, .lastMonth, .last30Days, .thisYear]
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Group {
             if showSettings {
                 SettingsView { showSettings = false }

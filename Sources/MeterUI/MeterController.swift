@@ -5,7 +5,7 @@ import MeterCore
 import ServiceManagement
 
 @MainActor
-final class MeterController: ObservableObject {
+public final class MeterController: ObservableObject {
     @Published var records: [DailyRecord] = []
     @Published var settings: MeterSettings = .default
     @Published var selectedPeriod: PeriodKind = .thisMonth
@@ -21,9 +21,11 @@ final class MeterController: ObservableObject {
     private var previousSnapshot: InterfaceSnapshot?
     private var usingLiveTracker = false
     private var bandwidthProblems: [String] = []
+    private let now: () -> Date
 
-    init(store: UsageStore = UsageStore()) {
+    public init(store: UsageStore = UsageStore()) {
         self.store = store
+        self.now = Date.init
         self.records = store.records
         self.settings = store.settings
         self.selectedPeriod = store.settings.menuBarPeriod
@@ -31,17 +33,49 @@ final class MeterController: ObservableObject {
         startTimer()
     }
 
+    /// Fixed data for `make shots`. Reads no Bandwidth+ files, saves nothing,
+    /// and starts no timer, so the views render the same picture every run.
+    public init(
+        previewRecords records: [DailyRecord],
+        settings: MeterSettings,
+        period: PeriodKind,
+        network: String? = nil,
+        now: Date,
+        downBps: Double = 0,
+        upBps: Double = 0
+    ) {
+        self.store = UsageStore(fileURL: FileManager.default.temporaryDirectory
+            .appendingPathComponent("bandwidth-meter-preview-\(UUID().uuidString).json"))
+        self.now = { now }
+        self.records = records
+        self.settings = settings
+        self.selectedPeriod = period
+        self.selectedNetwork = network
+        self.usingBandwidthPlus = true
+        self.lastSync = now
+        self.downBps = downBps
+        self.upBps = upBps
+        self.status = MeterStatus.line(
+            bandwidthProblems: [],
+            storeProblem: nil,
+            readingBandwidthPlus: true,
+            trackingThisMac: false,
+            hasRecords: !records.isEmpty
+        )
+    }
+
     var report: PeriodReport {
         Aggregator.report(
             records,
             kind: selectedPeriod,
             network: selectedNetwork,
+            now: now(),
             settings: settings
         )
     }
 
     var menuBarReport: PeriodReport {
-        Aggregator.report(records, kind: settings.menuBarPeriod, network: selectedNetwork, settings: settings)
+        Aggregator.report(records, kind: settings.menuBarPeriod, network: selectedNetwork, now: now(), settings: settings)
     }
 
     var availableNetworks: [String] {

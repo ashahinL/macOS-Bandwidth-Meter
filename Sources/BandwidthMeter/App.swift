@@ -1,6 +1,7 @@
 import AppKit
 import Darwin
 import MeterCore
+import MeterUI
 import SwiftUI
 
 @main

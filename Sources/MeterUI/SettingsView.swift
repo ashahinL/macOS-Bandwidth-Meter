@@ -1,11 +1,15 @@
 import MeterCore
 import SwiftUI
 
-struct SettingsView: View {
+public struct SettingsView: View {
     @EnvironmentObject private var meter: MeterController
     var onClose: () -> Void
 
-    var body: some View {
+    public init(onClose: @escaping () -> Void) {
+        self.onClose = onClose
+    }
+
+    public var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {

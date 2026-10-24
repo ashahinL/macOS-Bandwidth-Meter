@@ -21,9 +21,20 @@ let package = Package(
             dependencies: [],
             path: "Sources/MeterCore"
         ),
+        .target(
+            name: "MeterUI",
+            dependencies: ["MeterCore", "InterfaceCounters"],
+            path: "Sources/MeterUI",
+            linkerSettings: [
+                .linkedFramework("SwiftUI"),
+                .linkedFramework("AppKit"),
+                .linkedFramework("Charts"),
+                .linkedFramework("ServiceManagement"),
+            ]
+        ),
         .executableTarget(
             name: "BandwidthMeter",
-            dependencies: ["MeterCore", "InterfaceCounters"],
+            dependencies: ["MeterCore", "MeterUI"],
             path: "Sources/BandwidthMeter",
             linkerSettings: [
                 .linkedFramework("SwiftUI"),

@@ -1,10 +1,14 @@
 import MeterCore
 import SwiftUI
 
-struct MenuBarLabel: View {
+public struct MenuBarLabel: View {
     @ObservedObject var meter: MeterController
 
-    var body: some View {
+    public init(meter: MeterController) {
+        self.meter = meter
+    }
+
+    public var body: some View {
         // MenuBarExtra only reliably draws a single Text. An HStack of "M" + amount
         // was clipping to the letter. Keep this one string and fixed-size.
         Text(caption)
