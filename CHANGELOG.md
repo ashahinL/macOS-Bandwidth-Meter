@@ -7,12 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-24
+
 ### Fixed
 - A later Bandwidth+ read keeps the larger down and up totals for that day and network. A smaller today file no longer replaces a finished history day.
 - `bandwidth-meter --network NAME` filters the default summary, not only a single period.
 - A CSV import that cannot be parsed prints the parse error.
 - A usage file that cannot be read is copied to `usage.json.bak`. It is not overwritten when that copy fails. The menu bar and the CLI show the error.
 - When a Bandwidth+ history file cannot be read, the menu bar says so and keeps the last saved totals.
+
+### Changed
+- The panel drops the "METER" label and the box around the total. Import, Export, and Quit stay at the bottom. A failed import or export shows its error there.
+- The monthly quota bar uses the download color, and turns red after 90 percent.
+- Settings labels are sentence case, and Done is a button.
 
 ## [1.0.0] - 2026-08-24
 
@@ -44,4 +51,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Prebuilt GitHub Release zips** for Apple Silicon: menu bar app, CLI, or
   both (with `install.sh`), so you do not have to build from source.
 
+[1.0.1]: https://github.com/ashahinL/macOS-Bandwidth-Meter/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ashahinL/macOS-Bandwidth-Meter/releases/tag/v1.0.0

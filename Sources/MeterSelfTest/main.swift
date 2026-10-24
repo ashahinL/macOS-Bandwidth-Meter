@@ -89,9 +89,9 @@ func run() -> Int {
     let settings = MeterSettings(weekStartsOnMonday: true, billingDay: 1)
     let timeZone = TimeZone(secondsFromGMT: 3 * 3600)!
     let records = [
-        DailyRecord(date: "2026-08-23", network: "stoneAndSteel_Up", downBytes: Bytes.fromMegabytes(1500.1), upBytes: Bytes.fromMegabytes(264.6)),
-        DailyRecord(date: "2026-08-23", network: "stoneAndSteel_UpR5G", downBytes: Bytes.fromMegabytes(6490.6), upBytes: Bytes.fromMegabytes(428.1)),
-        DailyRecord(date: "2026-08-24", network: "stoneAndSteel_UpR5G", downBytes: Bytes.fromMegabytes(2324.0), upBytes: Bytes.fromMegabytes(246.2)),
+        DailyRecord(date: "2026-08-23", network: "Home", downBytes: Bytes.fromMegabytes(1500.1), upBytes: Bytes.fromMegabytes(264.6)),
+        DailyRecord(date: "2026-08-23", network: "Home-5G", downBytes: Bytes.fromMegabytes(6490.6), upBytes: Bytes.fromMegabytes(428.1)),
+        DailyRecord(date: "2026-08-24", network: "Home-5G", downBytes: Bytes.fromMegabytes(2324.0), upBytes: Bytes.fromMegabytes(246.2)),
     ]
 
     func day(_ value: String) -> Date {
@@ -144,7 +144,7 @@ func run() -> Int {
     check("today is Monday only") {
         let report = Aggregator.report(records, kind: .today, now: monday, settings: settings, timeZone: timeZone)
         try expect(almostEqual(report.totals.totalBytes, Bytes.fromMegabytes(2_570.2)), "today total")
-        try expect(report.networks.map(\.network) == ["stoneAndSteel_UpR5G"], "today networks")
+        try expect(report.networks.map(\.network) == ["Home-5G"], "today networks")
     }
 
     check("last month is empty") {
@@ -153,7 +153,7 @@ func run() -> Int {
     }
 
     check("network filter") {
-        let report = Aggregator.report(records, kind: .thisMonth, network: "stoneAndSteel_Up", now: monday, settings: settings, timeZone: timeZone)
+        let report = Aggregator.report(records, kind: .thisMonth, network: "Home", now: monday, settings: settings, timeZone: timeZone)
         try expect(almostEqual(report.totals.totalBytes, Bytes.fromMegabytes(1_764.7)), "filtered total")
     }
 
@@ -207,9 +207,9 @@ func run() -> Int {
     check("CSV parse of Bandwidth+ export") {
         let text = """
         Date,Network,Down (MB),Up (MB),Total (MB)
-        2026-08-23,stoneAndSteel_Up,1500.1,264.6,1764.7
-        2026-08-23,stoneAndSteel_UpR5G,6490.6,428.1,6918.7
-        2026-08-24,stoneAndSteel_UpR5G,2324.0,246.2,2570.2
+        2026-08-23,Home,1500.1,264.6,1764.7
+        2026-08-23,Home-5G,6490.6,428.1,6918.7
+        2026-08-24,Home-5G,2324.0,246.2,2570.2
         """
         let parsed = try CSV.parse(text)
         try expect(parsed.count == 3, "row count")

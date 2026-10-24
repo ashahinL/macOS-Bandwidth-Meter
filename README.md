@@ -3,7 +3,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Platform: macOS](https://img.shields.io/badge/Platform-macOS%2014%2B-brightgreen.svg)
 ![Architecture: Apple Silicon](https://img.shields.io/badge/Arch-Apple%20Silicon-orange.svg)
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-purple.svg)
+![Version: 1.0.1](https://img.shields.io/badge/Version-1.0.1-purple.svg)
 
 Weekly and monthly bandwidth totals from [Bandwidth+](https://apps.apple.com/app/bandwidth/id490461369) daily history.
 
@@ -16,23 +16,26 @@ when you want the totals — the CLI does not need to stay open. The menu bar
 app is there when you want a dashboard.
 
 ```
-┌──────────────────────────────────────┐
-│  METER                    [Wi-Fi] ⚙  │
-│  Source: Bandwidth+ live history     │
-│ ──────────────────────────────────── │
-│  Today   Week   Month   All          │
-│                                      │
-│           12.32 GB                   │
-│        ↓ 11.28 GB  ↑ 1.04 GB         │
-│ ──────────────────────────────────── │
-│  by network                          │
-│  home-5G              10.56 GB       │
-│  home                 1.76 GB        │
-│ ──────────────────────────────────── │
-│  by day                              │
-│  2026-08-23           8.68 GB        │
-│  2026-08-24           3.64 GB        │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│  Live from Bandwidth+              All ⚙ │
+│                                          │
+│  Today   This week  [This month]   All   │
+│                                          │
+│  12.32 GB                                │
+│  ↓ 11.28 GB   ↑ 1.04 GB    since 23 Aug  │
+│                                          │
+│  Peak 8.68 GB                            │
+│                                          │
+│  Networks                                │
+│  Home-5G                         10.56 GB│
+│  Home                             1.76 GB│
+│                                          │
+│  Days                                    │
+│  Sun 23 Aug                       8.68 GB│
+│  Mon 24 Aug                       3.64 GB│
+│                                          │
+│  Import CSV   Export                Quit │
+└──────────────────────────────────────────┘
 ```
 
 The menu bar itself shows the compact total for the period you pick in
