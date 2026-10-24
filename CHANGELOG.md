@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-24
+
 ### Changed
 - Releases ship one disk image, `Bandwidth-Meter-<version>.dmg`, instead of three zips. Double-click **Install** in it to put the app in `/Applications` and the `bandwidth-meter` command in `/usr/local/bin`. No Terminal needed.
 - The installer quits a running copy first, keeps your history and settings when it updates, and opens the app when it finishes.
@@ -66,5 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Prebuilt GitHub Release zips** for Apple Silicon: menu bar app, CLI, or
   both (with `install.sh`), so you do not have to build from source.
 
+[Unreleased]: https://github.com/ashahinL/macOS-Bandwidth-Meter/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/ashahinL/macOS-Bandwidth-Meter/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/ashahinL/macOS-Bandwidth-Meter/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ashahinL/macOS-Bandwidth-Meter/releases/tag/v1.0.0
