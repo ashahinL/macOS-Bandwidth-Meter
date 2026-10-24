@@ -1,40 +1,28 @@
 
-## Downloads
+## Download
 
-| File | What you get |
-|---|---|
-| `Bandwidth-Meter-*-full-macos-arm64.zip` | **Both**: the app, the CLI, and `install.sh` |
-| `Bandwidth-Meter-*.app.zip` | The menu bar app only |
-| `Bandwidth-Meter-*-cli-macos-arm64.zip` | The CLI only |
+**`Bandwidth-Meter-*.dmg`** has everything. Open it and double-click
+**Install Bandwidth Meter**. The installer puts the menu bar app in
+`/Applications` and the `bandwidth-meter` command in `/usr/local/bin`, then
+opens the app. You don't need Terminal.
 
 Apple Silicon, macOS 14 or later. Keep [Bandwidth+](https://apps.apple.com/app/bandwidth/id490461369)
-running so each day is recorded. You don't need Xcode.
+running so each day is recorded.
 
-The builds are ad-hoc signed, not notarized. The combined zip's `./install.sh`
-clears the quarantine flag. Otherwise right-click the app and choose Open, or
-run `xattr -cr` on the files you copied.
+The installer isn't notarized yet, so macOS stops it the first time:
 
-### Both
+- **macOS 15 or later:** click **Done** on the warning, open **System Settings ›
+  Privacy & Security**, scroll down to **Security**, click **Open Anyway** next
+  to "Install Bandwidth Meter.pkg", and confirm with your password. Right-click
+  › Open no longer skips the check.
+- **macOS 14:** right-click **Install Bandwidth Meter**, choose **Open**, then
+  **Open** again.
 
-```sh
-unzip Bandwidth-Meter-*-full-macos-arm64.zip
-cd Bandwidth-Meter-*-full-macos-arm64
-./install.sh
-```
+The same goes for **Uninstall Bandwidth Meter** on the disk image. It removes
+the app and the command, and asks before it deletes your saved totals.
 
-### App only
-
-Unzip and drag **Bandwidth Meter.app** to `/Applications`.
-
-### CLI only
-
-```sh
-unzip Bandwidth-Meter-*-cli-macos-arm64.zip
-mkdir -p ~/.local/bin
-cp bandwidth-meter ~/.local/bin/
-chmod +x ~/.local/bin/bandwidth-meter
-xattr -cr ~/.local/bin/bandwidth-meter
-```
+Updating: run the new installer. It replaces the app and keeps your history and
+settings.
 
 See the [changelog](https://github.com/ashahinL/macOS-Bandwidth-Meter/blob/main/CHANGELOG.md)
 for every change, and [PRIVACY.md](https://github.com/ashahinL/macOS-Bandwidth-Meter/blob/main/PRIVACY.md)

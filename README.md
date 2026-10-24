@@ -80,43 +80,36 @@ Store, left running.
 
 ### Download
 
-Get a zip from [Releases](https://github.com/ashahinL/macOS-Bandwidth-Meter/releases).
-You don't need Xcode.
+Get **`Bandwidth-Meter-<version>.dmg`** from
+[Releases](https://github.com/ashahinL/macOS-Bandwidth-Meter/releases). You
+don't need Xcode or Terminal.
 
-| File | What you get |
-|---|---|
-| `Bandwidth-Meter-*-full-macos-arm64.zip` | **Both**: the app, the CLI, and `install.sh` |
-| `Bandwidth-Meter-*.app.zip` | The menu bar app only |
-| `Bandwidth-Meter-*-cli-macos-arm64.zip` | The CLI only |
+1. Open the disk image and double-click **Install Bandwidth Meter**.
+2. Click through the installer and enter your password when it asks.
 
-**Both.** Unzip the combined archive and run the installer:
+The installer puts **Bandwidth Meter.app** in `/Applications` and the
+`bandwidth-meter` command in `/usr/local/bin`, which is already on your `PATH`.
+It opens the app when it finishes. To update, run the installer from a newer
+disk image. It replaces the app and keeps your history and settings.
 
-```sh
-unzip Bandwidth-Meter-*-full-macos-arm64.zip
-cd Bandwidth-Meter-*-full-macos-arm64
-./install.sh              # app + CLI
-# ./install.sh --app      # menu bar app only
-# ./install.sh --cli      # CLI only
-```
+The installer isn't notarized yet, so macOS blocks it the first time you open
+it:
 
-It copies the app to `/Applications` and the CLI to `~/.local/bin`, and clears
-the download quarantine so Gatekeeper does not block them.
+- **macOS 15 or later:** click **Done** on the warning. Open **System Settings ›
+  Privacy & Security**, scroll down to **Security**, and click **Open Anyway**
+  next to "Install Bandwidth Meter.pkg". Confirm with your password and the
+  installer opens. Right-click › Open no longer gets past this check on
+  macOS 15.
+- **macOS 14:** right-click **Install Bandwidth Meter**, choose **Open**, and
+  click **Open** again.
 
-**App only.** Unzip and drag **Bandwidth Meter.app** to `/Applications`. The
-build is ad-hoc signed and not notarized, so open it the first time with
-right-click, Open, or run `xattr -cr "/Applications/Bandwidth Meter.app"`.
+You only do this once per download. The app and the command it installs open
+normally afterwards.
 
-**CLI only.** Unzip and put `bandwidth-meter` on your `PATH`:
-
-```sh
-unzip Bandwidth-Meter-*-cli-macos-arm64.zip
-mkdir -p ~/.local/bin
-cp bandwidth-meter ~/.local/bin/
-chmod +x ~/.local/bin/bandwidth-meter
-xattr -cr ~/.local/bin/bandwidth-meter
-```
-
-Add `~/.local/bin` to your `PATH` if it is not there already.
+If you installed an earlier version from a zip, the old command is still in `~/.local/bin`
+and may come first on your `PATH`. Delete it with
+`rm ~/.local/bin/bandwidth-meter`, or run the uninstaller from the disk image,
+which removes it too.
 
 ### Build from source
 
@@ -134,17 +127,30 @@ make install              # CLI to ~/.local/bin, app to /Applications
 
 ### Uninstall
 
+Open the disk image and double-click **Uninstall Bandwidth Meter**. It lists
+what it found, asks for your password, and removes the app, the
+`bandwidth-meter` command, and the installer's receipt. It then asks whether
+to delete your saved totals and settings as well. The default is to keep them.
+It doesn't touch Bandwidth+. macOS may block the uninstaller the first time,
+just like the installer; use **Open Anyway** the same way.
+
+Without the disk image:
+
 ```sh
-rm -f ~/.local/bin/bandwidth-meter
-rm -rf "/Applications/Bandwidth Meter.app"
+sudo rm -rf "/Applications/Bandwidth Meter.app" /usr/local/bin/bandwidth-meter
+sudo pkgutil --forget dev.ashahin.BandwidthMeter.pkg
 ```
 
-`make uninstall` does the same from a checkout. Neither touches Bandwidth+ or
-the saved totals. To delete those too:
+`make uninstall` removes a source install (`~/.local/bin` and `/Applications`).
+To delete the saved totals and settings too:
 
 ```sh
 rm -rf ~/Library/Application\ Support/BandwidthMeter
+defaults delete dev.ashahin.BandwidthMeter
 ```
+
+If you turned on **Open at login**, turn it off in the app's settings before
+you uninstall, or remove it under **System Settings › General › Login Items**.
 
 ## Usage
 
@@ -346,14 +352,18 @@ with `pgrep -fl BandwidthMeter`, then check whether the menu bar is full.
 </details>
 
 <details>
-<summary>macOS says the app or the CLI is from an unidentified developer</summary>
+<summary>macOS says it can't verify the installer</summary>
 
-The release zips are ad-hoc signed, not notarized. Use `./install.sh` from the
-combined zip, right-click the app and choose Open, or run:
+The installer isn't notarized yet. On macOS 15 or later, open **System
+Settings › Privacy & Security**, scroll down to **Security**, and click **Open
+Anyway**. Right-click › Open no longer works there. On macOS 14, right-click the
+installer and choose **Open**. See [Download](#download).
+
+If you built the app yourself and copied it from another Mac, clear the
+download flag instead:
 
 ```sh
 xattr -cr "/Applications/Bandwidth Meter.app"
-xattr -cr ~/.local/bin/bandwidth-meter
 ```
 
 </details>
@@ -363,7 +373,7 @@ xattr -cr ~/.local/bin/bandwidth-meter
 ```sh
 make test       # run the self-test suite
 make            # build the app and the CLI into dist/
-make dist       # zip the app, the CLI, and a combined archive
+make dmg        # build dist/Bandwidth-Meter-<version>.dmg (installer + uninstaller)
 make shots      # render docs/screenshots from the real views
 make help       # list every target
 ```
@@ -401,11 +411,15 @@ Sources/InterfaceCounters/      64-bit interface counters (C)
 Sources/MeterSelfTest/          self-test executable
 Sources/MeterShots/             renders docs/screenshots
 Resources/Info.plist            app bundle metadata
-scripts/install-release.sh      copied into the combined zip as install.sh
+scripts/build-dmg.sh            builds the installer pkg, the uninstaller, and the disk image
+packaging/pkg-scripts/          preinstall and postinstall for the pkg
+packaging/installer/            installer welcome, conclusion, and distribution
+packaging/uninstaller/          the Uninstall Bandwidth Meter applet
+packaging/dmg/                  disk image layout and background
 docs/release-notes/             GitHub release notes, one file per version
-Makefile                        build, test, shots, dist, install
+Makefile                        build, test, shots, dmg, install
 build.sh                        make test app install, then print a summary
-.github/workflows/ci.yml        test, build, and pack zips on macOS
+.github/workflows/ci.yml        test, build, and check the disk image on macOS
 .github/workflows/release.yml   publish the release when a v* tag is pushed
 ```
 

@@ -9,7 +9,7 @@ git clone https://github.com/ashahinL/macOS-Bandwidth-Meter.git
 cd macOS-Bandwidth-Meter
 make          # build the menu bar app and CLI
 make test     # run the self-test suite
-make dist     # zip the app, the CLI, and a combined archive
+make dmg      # build the release disk image (installer + uninstaller)
 make shots    # render the README screenshots into docs/screenshots
 ```
 

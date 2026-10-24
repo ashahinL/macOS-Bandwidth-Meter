@@ -9,7 +9,7 @@ privately first:
   (**Report a vulnerability**).
 
 Say what you found, how to reproduce it, and which version you use. The
-version is in the zip name, and in Finder's **Get Info** for
+version is in the disk image's name, and in Finder's **Get Info** for
 **Bandwidth Meter.app**. Please don't open a public issue for it until a fix is
 out.
 
@@ -22,18 +22,22 @@ out.
 - A crafted Bandwidth+ archive, `History.csv`, or `usage.json` that makes
   Bandwidth Meter run code, crash in a way that loses saved totals, or write
   outside its own folder.
-- A problem in `install.sh` from the combined zip, such as copying files
-  somewhere other than `/Applications` and `~/.local/bin`.
+- A problem in the installer or the uninstaller from the disk image, such as
+  writing anywhere other than `/Applications/Bandwidth Meter.app` and
+  `/usr/local/bin/bandwidth-meter`, or removing anything else.
 
 A bug that only gives wrong totals, with no data exposed or lost, is a normal
 issue.
 
-## What to expect from the release zips
+## What to expect from the release disk image
 
-The zips on the Releases page are built by GitHub Actions from the tagged
-commit. The app and the CLI are ad-hoc signed and not notarized, which is why
-`install.sh` clears the quarantine flag. If you would rather not trust a
-prebuilt binary, build from source with `make`.
+The disk image on the Releases page is built by GitHub Actions from the tagged
+commit. The installer package is unsigned and not notarized, and the app and
+the CLI inside it are ad-hoc signed, which is why macOS asks you to approve the
+installer in **Privacy & Security** first. The installer runs two short scripts
+as root: `packaging/pkg-scripts/preinstall` quits a running copy of the app,
+and `postinstall` copies the CLI to `/usr/local/bin` and opens the app. If you
+would rather not trust a prebuilt binary, build from source with `make`.
 
 ## Supported versions
 
