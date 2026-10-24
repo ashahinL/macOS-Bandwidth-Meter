@@ -6,16 +6,21 @@ struct SettingsView: View {
     var onClose: () -> Void
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Text("Settings")
                         .font(.meter(20))
                     Spacer()
-                    Button("Done", action: onClose)
-                        .font(.system(size: 13, weight: .semibold))
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Theme.down)
+                    Button(action: onClose) {
+                        Text("Done")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Theme.background)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Theme.down, in: Capsule())
+                    }
+                    .buttonStyle(PressFadeStyle())
                 }
 
                 field("Menu bar shows") {
@@ -30,6 +35,7 @@ struct SettingsView: View {
 
                 Toggle("Week starts on Monday", isOn: weekBinding)
                     .toggleStyle(.switch)
+                    .tint(Theme.down)
 
                 field("Billing cycle start day") {
                     Stepper(value: billingBinding, in: 1...28) {
@@ -38,7 +44,7 @@ struct SettingsView: View {
                     }
                 }
 
-                field("Monthly quota (GB, 0 = off)") {
+                field("Monthly quota") {
                     Stepper(value: quotaBinding, in: 0...10_000, step: 50) {
                         Text(meter.settings.monthlyQuotaGB == nil ? "Off" : "\(Int(meter.settings.monthlyQuotaGB ?? 0)) GB")
                             .font(.system(size: 13, design: .rounded))
@@ -47,12 +53,14 @@ struct SettingsView: View {
 
                 Toggle("Open at login", isOn: loginBinding)
                     .toggleStyle(.switch)
+                    .tint(Theme.down)
 
                 Toggle("Show live speed in menu bar", isOn: speedBinding)
                     .toggleStyle(.switch)
+                    .tint(Theme.down)
 
-                Text("Menu and dropdown controls close a menu-bar window on macOS, so settings use tappable chips and steppers instead. Weekly and monthly totals come from Bandwidth+ daily history.")
-                    .font(.system(size: 11))
+                Text("Weekly and monthly totals come from Bandwidth+ daily history.")
+                    .font(.system(size: 12))
                     .foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -101,9 +109,8 @@ struct SettingsView: View {
 
     private func field<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .tracking(1.1)
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Theme.muted)
             content()
         }
@@ -121,18 +128,9 @@ struct FlexibleChips<Item: Hashable>: View {
             ForEach(rows, id: \.self) { row in
                 HStack(spacing: 6) {
                     ForEach(row, id: \.self) { item in
-                        let selected = item == selection
-                        Button {
+                        MeterChip(title: title(item), selected: item == selection) {
                             onSelect(item)
-                        } label: {
-                            Text(title(item))
-                                .font(.system(size: 11, weight: selected ? .semibold : .medium, design: .rounded))
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 6)
-                                .background(selected ? Theme.ink : Theme.chip, in: Capsule())
-                                .foregroundStyle(selected ? Theme.background : Theme.ink.opacity(0.8))
                         }
-                        .buttonStyle(.plain)
                     }
                     Spacer(minLength: 0)
                 }

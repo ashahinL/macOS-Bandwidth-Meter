@@ -52,6 +52,10 @@ final class MeterController: ObservableObject {
         records.map(\.date).min()
     }
 
+    var statusIsProblem: Bool {
+        !bandwidthProblems.isEmpty || store.loadError != nil
+    }
+
     func bootstrap() {
         let plus = BandwidthPlus.loadRecords()
         bandwidthProblems = plus.problems
