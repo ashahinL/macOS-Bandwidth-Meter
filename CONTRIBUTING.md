@@ -28,9 +28,13 @@ when its files are not on the machine.
 ## The rule that matters
 
 **Do not throw away a more precise reading for a rounded one.** Bandwidth+
-exports CSV in decimal megabytes; the live `History` / `Data` files hold byte
+exports CSV in decimal megabytes. The live `History` and `Data` files hold byte
 counters. A same-day merge must keep the Bandwidth+ live bytes, not `max()` of
-the two, or a later CSV import will replace exact totals with rounded ones.
+the live row and the CSV row, or a later CSV import will replace exact totals
+with rounded ones.
+
+When both rows are live Bandwidth+ bytes, keep the larger down and the larger
+up. A later smaller copy of that day must not replace a finished one.
 
 The self-test has a check for that — please keep it passing.
 

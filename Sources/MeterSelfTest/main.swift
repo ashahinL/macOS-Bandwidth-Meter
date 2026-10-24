@@ -111,7 +111,27 @@ func run() -> Int {
             with: [DailyRecord(date: "2026-08-23", network: "Home", downBytes: 1_500_071_936, upBytes: 264_582_144, source: "bandwidth-plus-history")]
         )
         try expect(merged[0].downBytes == 1_500_071_936, "plus down")
+        try expect(merged[0].upBytes == 264_582_144, "plus up")
         try expect(merged[0].source == "bandwidth-plus-history", "plus source")
+
+        let reversed = Aggregator.merge(
+            [DailyRecord(date: "2026-08-23", network: "Home", downBytes: 1_500_071_936, upBytes: 264_582_144, source: "bandwidth-plus-history")],
+            with: [DailyRecord(date: "2026-08-23", network: "Home", downBytes: 1_500_100_000, upBytes: 264_600_000, source: "csv")]
+        )
+        try expect(reversed[0].downBytes == 1_500_071_936, "reversed down")
+        try expect(reversed[0].upBytes == 264_582_144, "reversed up")
+        try expect(reversed[0].source == "bandwidth-plus-history", "reversed source")
+    }
+
+    check("a later Bandwidth+ read does not shrink the day") {
+        let merged = Aggregator.merge(
+            [DailyRecord(date: "2026-08-23", network: "Home", downBytes: 5_000, upBytes: 1_000, source: "bandwidth-plus-history")],
+            with: [DailyRecord(date: "2026-08-23", network: "Home", downBytes: 100, upBytes: 2_000, source: "bandwidth-plus-today")]
+        )
+        try expect(merged.count == 1, "count")
+        try expect(merged[0].downBytes == 5_000, "down")
+        try expect(merged[0].upBytes == 2_000, "up")
+        try expect(merged[0].source == "bandwidth-plus-history", "source")
     }
 
     check("billing cycle from the 15th") {

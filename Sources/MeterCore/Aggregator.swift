@@ -138,15 +138,14 @@ public enum Aggregator {
         if incomingRank < currentRank {
             return current
         }
-        if incomingRank >= 2 {
-            return incoming
-        }
+        let currentTotal = current.downBytes &+ current.upBytes
+        let incomingTotal = incoming.downBytes &+ incoming.upBytes
         return DailyRecord(
             date: incoming.date,
             network: incoming.network,
             downBytes: max(current.downBytes, incoming.downBytes),
             upBytes: max(current.upBytes, incoming.upBytes),
-            source: incoming.source
+            source: incomingTotal > currentTotal ? incoming.source : current.source
         )
     }
 
