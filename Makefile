@@ -2,6 +2,7 @@
 #
 #   make            build the menu bar app and CLI
 #   make test       run the self-test suite
+#   make shots      render the README screenshots into docs/screenshots
 #   make dist       zip the app, the CLI, and a combined archive for GitHub Releases
 #   make install    install the CLI to ~/.local/bin (and the app, if built)
 #   make uninstall  remove the CLI and the app
@@ -15,6 +16,7 @@ APP_DEST    := /Applications/$(APP_NAME).app
 CLI_DEST    := $(HOME)/.local/bin/$(CLI_NAME)
 INFO_PLIST  := Resources/Info.plist
 INSTALL_SH  := scripts/install-release.sh
+SHOTS_DIR   := docs/screenshots
 SWIFT       := swift
 VERSION     := $(shell /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' $(INFO_PLIST))
 ARCH        := $(shell uname -m)
@@ -25,7 +27,7 @@ BOTH_ZIP    := $(DIST_DIR)/$(BOTH_NAME).zip
 
 SHELL := /bin/bash
 
-.PHONY: all app cli test dist install install-cli install-app uninstall clean help
+.PHONY: all app cli test shots dist install install-cli install-app uninstall clean help
 
 all: app
 
@@ -70,6 +72,11 @@ dist: app
 ## Run the self-test suite
 test:
 	$(SWIFT) run MeterSelfTest
+
+## Render the README screenshots from the real views and demo data
+shots:
+	@mkdir -p "$(SHOTS_DIR)"
+	SHOTS_DIR="$(SHOTS_DIR)" $(SWIFT) run MeterShots -AppleLocale en_GB -AppleShowScrollBars WhenScrolling
 
 ## Install the CLI into ~/.local/bin
 install-cli:
@@ -117,6 +124,7 @@ help:
 	@echo ""
 	@echo "  make                    build the menu bar app and CLI"
 	@echo "  make test               run the self-test suite"
+	@echo "  make shots              render README screenshots into docs/screenshots"
 	@echo "  make dist               zip app / CLI / both for GitHub Releases"
 	@echo "  make install            install CLI (and the app, if built)"
 	@echo "  make install-cli        CLI only, to ~/.local/bin"

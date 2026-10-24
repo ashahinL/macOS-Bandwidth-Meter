@@ -8,6 +8,7 @@ let package = Package(
         .executable(name: "BandwidthMeter", targets: ["BandwidthMeter"]),
         .executable(name: "bandwidth-meter", targets: ["BandwidthMeterCLI"]),
         .executable(name: "MeterSelfTest", targets: ["MeterSelfTest"]),
+        .executable(name: "MeterShots", targets: ["MeterShots"]),
         .library(name: "MeterCore", targets: ["MeterCore"]),
     ],
     targets: [
@@ -47,6 +48,15 @@ let package = Package(
             name: "BandwidthMeterCLI",
             dependencies: ["MeterCore"],
             path: "Sources/BandwidthMeterCLI"
+        ),
+        .executableTarget(
+            name: "MeterShots",
+            dependencies: ["MeterCore", "MeterUI"],
+            path: "Sources/MeterShots",
+            linkerSettings: [
+                .linkedFramework("SwiftUI"),
+                .linkedFramework("AppKit"),
+            ]
         ),
         .executableTarget(
             name: "MeterSelfTest",
