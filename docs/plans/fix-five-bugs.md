@@ -1,6 +1,6 @@
 # Fix the five number bugs
 
-Status: in progress. Tasks 1 to 5 are implemented. Review is next.
+Status: done. All five tasks are committed on main. The app target was not built here because Command Line Tools cannot load SwiftUI macros. `make test` and the CLI build passed. Comment Sicko could not be spawned.
 
 The menu bar app and the CLI already share MeterCore. These tasks fix wrong totals and quiet failures. Each task is one commit. `make test` is the check.
 
