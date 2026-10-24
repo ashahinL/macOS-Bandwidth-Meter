@@ -10,6 +10,7 @@ cd macOS-Bandwidth-Meter
 make          # build the menu bar app and CLI
 make test     # run the self-test suite
 make dist     # zip the app, the CLI, and a combined archive
+make shots    # render the README screenshots into docs/screenshots
 ```
 
 You need Xcode Command Line Tools (`xcode-select --install`) and macOS 14 or
@@ -22,8 +23,17 @@ when its files are not on the machine.
 - New period, merge, or CSV behaviour comes with a check in
   `Sources/MeterSelfTest/main.swift`. The suite uses synthetic daily records, so
   you can cover weeks and billing cycles without waiting for real traffic.
-- Swift style matches what is there: the shared logic lives in `MeterCore`, the
-  GUI and CLI are thin layers over it.
+- Swift style matches what is there. The shared logic lives in `MeterCore`.
+  The SwiftUI views and the controller live in `MeterUI`. The app and the CLI
+  are thin layers over them.
+- A change you can see in the panel, the settings, the menu bar label, or the
+  CLI summary comes with fresh screenshots from `make shots`. Look at every PNG
+  in `docs/screenshots/` before committing them. The demo data is in
+  `Sources/MeterShots/DemoData.swift`; keep the network names made up.
+- A change people will notice adds a line under `## [Unreleased]` in
+  `CHANGELOG.md`.
+- A change to what the app reads, stores, or sends updates
+  [PRIVACY.md](PRIVACY.md) in the same pull request.
 
 ## The rule that matters
 
@@ -45,6 +55,19 @@ steals key focus. Settings and the network filter have to stay inside the extra
 (chips, steppers, a cycle button) rather than opening a system menu. The menu
 bar label must be a **single** `Text`; extra views in the label are clipped.
 
+## If the build can't find `SwiftUIMacros`
+
+Some Command Line Tools betas ship a default macOS SDK whose SwiftUI needs a
+macro plugin the tools don't include. The build then fails on every `@State`
+with "plugin for module 'SwiftUIMacros' not found". Point the build at the
+older SDK that came with the same tools:
+
+```sh
+ls /Library/Developer/CommandLineTools/SDKs
+export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk
+make test
+```
+
 ## Reporting a bug
 
 Include your macOS version (`sw_vers`), whether Bandwidth+ is installed, and
@@ -54,3 +77,7 @@ the output of:
 bandwidth-meter
 bandwidth-meter --help
 ```
+
+Security or privacy problems go through a private report instead. See
+[SECURITY.md](SECURITY.md). [RELEASING.md](RELEASING.md) covers how a version
+ships.

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [1.0.1] - 2026-10-24
 
+### Added
+- README screenshots drawn from the app's own views with demo data. `make shots` renders them again.
+- `PRIVACY.md` lists every file the app reads and writes. `SECURITY.md` explains how to report a problem privately, and `RELEASING.md` how a version ships.
+- Release notes live in `docs/release-notes/`. The release workflow uses them for the GitHub release.
+
 ### Fixed
 - A later Bandwidth+ read keeps the larger down and up totals for that day and network. A smaller today file no longer replaces a finished history day.
 - `bandwidth-meter --network NAME` filters the default summary, not only a single period.
