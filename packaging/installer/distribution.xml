@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- productbuild distribution for Bandwidth Meter. scripts/build-dmg.sh fills
-     in the version and the component package name. -->
+     in the version, the component package name, and the Bandwidth+ bundle id. -->
 <installer-gui-script minSpecVersion="2">
     <title>Bandwidth Meter</title>
     <organization>dev.ashahin</organization>
@@ -8,6 +8,36 @@
     <license file="License.txt" mime-type="text/plain"/>
     <conclusion file="conclusion.html" mime-type="text/html"/>
     <options customize="never" require-scripts="false" hostArchitectures="arm64"/>
+    <!-- Warns, never blocks, when Bandwidth+ isn't installed. -->
+    <installation-check script="bandwidthPlusCheck()"/>
+    <script><![CDATA[
+function bandwidthPlusInstalled() {
+    var id = '@BANDWIDTH_PLUS_ID@';
+    var running = system.applications.fromIdentifier(id);
+    if (running && running.length > 0) {
+        return true;
+    }
+    var home = system.env.HOME || '';
+    var paths = ['/Applications/Bandwidth+.app', home + '/Applications/Bandwidth+.app'];
+    for (var i = 0; i < paths.length; i++) {
+        var info = system.files.bundleAtPath(paths[i]);
+        if (info && info.CFBundleIdentifier == id) {
+            return true;
+        }
+    }
+    return home != '' && system.files.fileExistsAtPath(home + '/Library/Containers/' + id + '/Data');
+}
+
+function bandwidthPlusCheck() {
+    if (bandwidthPlusInstalled()) {
+        return true;
+    }
+    my.result.type = 'Warning';
+    my.result.title = 'Bandwidth+ isn\'t installed';
+    my.result.message = 'Bandwidth Meter reads the daily history that Bandwidth+ records, so install it from the Mac App Store to keep the totals current: https://apps.apple.com/app/bandwidth/id490461369\n\nWithout it, Import CSV in the menu bar panel still works with a History.csv exported from Bandwidth+ on another Mac. Click Continue to install Bandwidth Meter anyway.';
+    return false;
+}
+]]></script>
     <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
     <volume-check>
         <allowed-os-versions>

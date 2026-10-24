@@ -89,7 +89,20 @@ screenshot, and the disk image are there.
   `Contents/Helpers/bandwidth-meter`, and `postinstall` copies it to
   `/usr/local/bin`, so the package never changes that folder's owner or
   permissions. `preinstall` quits a running copy. `postinstall` opens the app
-  for the signed-in user unless the install came from `sudo installer`.
+  for the signed-in user and starts a detached job that ejects the disk image
+  the pkg is on. Both are skipped when the install came from `sudo installer`.
+  Installer keeps the pkg open until its window closes, so the job waits for
+  the new receipt and then for the window to close. It never uses `-force`,
+  tries twice, and only touches a volume that `hdiutil info` lists as a disk
+  image mount. It reports through `logger -t bandwidth-meter-install`. To run
+  only the job:
+  `BM_POSTINSTALL_EJECT_JOB=1 packaging/pkg-scripts/postinstall x VOLUME PKG BEFORE START [WAIT]`.
+- An installation check in `distribution.xml` looks for Bandwidth+
+  (`au.id.haroldchu.mac.Bandwidth`) as a running app, as `Bandwidth+.app` in
+  `/Applications` or `~/Applications`, or by its sandbox container. When none
+  is found it shows a warning with the App Store link, and the user can
+  continue. Build with `BANDWIDTH_PLUS_ID=com.example.missing make dmg` to see
+  the warning on a Mac that has Bandwidth+.
 - **Uninstall.app**, an AppleScript applet that runs
   `packaging/uninstaller/uninstall.sh`.
 

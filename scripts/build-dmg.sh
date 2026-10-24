@@ -17,6 +17,8 @@
 # Other knobs:
 #   DMG_LAYOUT=plain        skip dmgbuild and the window layout (hdiutil only)
 #   DMGBUILD=/path/dmgbuild use this dmgbuild instead of the pinned venv copy
+#   BANDWIDTH_PLUS_ID=id    bundle id the installer looks for (for testing the
+#                           missing-Bandwidth+ warning with a fake one)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -39,6 +41,7 @@ UNINSTALLER_NAME="Uninstall.app"
 : "${DEVELOPER_ID_INSTALLER:=}"
 : "${NOTARY_PROFILE:=}"
 : "${DMG_LAYOUT:=}"
+: "${BANDWIDTH_PLUS_ID:=au.id.haroldchu.mac.Bandwidth}"
 
 step() { printf '==> %s\n' "$*"; }
 
@@ -124,6 +127,7 @@ sed "s/@VERSION@/$VERSION/g" packaging/installer/welcome.html > "$WORK/resources
 sed "s/@VERSION@/$VERSION/g" packaging/installer/conclusion.html > "$WORK/resources/conclusion.html"
 cp LICENSE "$WORK/resources/License.txt"
 sed -e "s/@VERSION@/$VERSION/g" -e "s/@COMPONENT@/BandwidthMeter-component.pkg/g" \
+	-e "s/@BANDWIDTH_PLUS_ID@/$BANDWIDTH_PLUS_ID/g" \
 	packaging/installer/distribution.xml > "$WORK/distribution.xml"
 
 productbuild_sign=()

@@ -36,7 +36,9 @@ commit. The installer package is unsigned and not notarized, and the app and
 the CLI inside it are ad-hoc signed, which is why macOS asks you to approve the
 installer in **Privacy & Security** first. The installer runs two short scripts
 as root: `packaging/pkg-scripts/preinstall` quits a running copy of the app,
-and `postinstall` copies the CLI to `/usr/local/bin` and opens the app. If you
+and `postinstall` copies the CLI to `/usr/local/bin`, opens the app, and
+starts a background job that ejects the installer's disk image (never with
+`-force`, and only that disk image) after the Installer window closes. If you
 would rather not trust a prebuilt binary, build from source with `make`.
 
 ## Supported versions

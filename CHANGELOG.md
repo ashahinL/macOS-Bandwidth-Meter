@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - Releases ship one disk image, `Bandwidth-Meter-<version>.dmg`, instead of three zips. Double-click **Install** in it to put the app in `/Applications` and the `bandwidth-meter` command in `/usr/local/bin`. No Terminal needed.
-- The installer quits a running copy first, keeps your history and settings when it updates, and opens the app when it finishes.
+- The installer quits a running copy first, keeps your history and settings when it updates, and opens the app when it finishes. When you close the installer window, it ejects the disk image it came from.
+- The installer warns when Bandwidth+ isn't installed, links to it on the Mac App Store, and lets you continue, since **Import CSV** works without it.
 - The disk image also has **Uninstall**. It removes the app, the command, and the installer receipt, and deletes your saved totals only if you say so.
 - The README explains how to open the installer on macOS 15 and later, where right-click › Open no longer gets past Gatekeeper.
 - `make dmg` (and `make dist`) builds the disk image. `scripts/build-dmg.sh` can sign and notarize it when Developer ID settings are given.

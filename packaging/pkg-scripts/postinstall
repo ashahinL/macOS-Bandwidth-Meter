@@ -6,10 +6,66 @@
 #    /usr/local/bin, creating that folder if it is missing. An existing
 #    /usr/local/bin keeps its owner and permissions.
 # 2. Opens the app for the person at the screen, so the menu bar item shows up
-#    straight away. Skipped for command-line installs (`installer -pkg`) and
-#    for installs onto another volume.
+#    straight away.
+# 3. Ejects the disk image the pkg was opened from, in a detached background
+#    job, once the install has finished and the Installer window is closed.
+#    Installer keeps the pkg open until then, and the job never forces it.
+#
+# 2 and 3 are skipped for command-line installs (`installer -pkg`) and for
+# installs onto another volume.
 
+PKG_ID="dev.ashahin.BandwidthMeter.pkg"
 APP="${2%/}/Bandwidth Meter.app"
+
+# Background job for 3. Arguments: volume, pkg path, receipt install-time
+# when postinstall started (empty on a first install), postinstall start time,
+# seconds to wait for the Installer window to close.
+EJECT_JOB='
+vol="$1" pkg="$2" before="$3" start="$4" wait="${5:-3600}"
+log() { /usr/bin/logger -t bandwidth-meter-install "$*"; }
+image_mounted() {
+	/usr/bin/hdiutil info 2>/dev/null | /usr/bin/awk -F "\t" -v v="$vol" "\$NF == v { f = 1 } END { exit !f }"
+}
+receipt_time() {
+	/usr/sbin/pkgutil --pkg-info-plist "'"$PKG_ID"'" 2>/dev/null |
+		/usr/bin/plutil -extract install-time raw - 2>/dev/null
+}
+# A receipt from this install means it worked: one that changed since
+# postinstall started, or one stamped within two minutes of it.
+installed() {
+	t="$(receipt_time)"
+	[ -n "$t" ] || return 1
+	[ "$t" != "$before" ] || [ "$t" -ge $((start - 120)) ]
+}
+n=0
+until installed; do
+	n=$((n + 1))
+	if [ "$n" -ge 90 ]; then log "no new receipt, leaving $vol mounted"; exit 0; fi
+	sleep 2
+done
+# Installer holds the pkg open until its window closes.
+n=0
+while /usr/sbin/lsof -t -- "$pkg" >/dev/null 2>&1; do
+	n=$((n + 2))
+	if [ "$n" -ge "$wait" ]; then log "$pkg is still open, leaving $vol mounted"; exit 0; fi
+	sleep 2
+done
+sleep 1
+for try in 1 2; do
+	image_mounted || exit 0
+	if /usr/bin/hdiutil detach "$vol" >/dev/null 2>&1; then log "ejected $vol"; exit 0; fi
+	[ "$try" = 1 ] && sleep 5
+done
+log "could not eject $vol"
+exit 0
+'
+
+if [ "${BM_POSTINSTALL_EJECT_JOB:-}" = 1 ]; then
+	# Test hook: run only the eject job in the foreground.
+	shift
+	exec /bin/sh -c "$EJECT_JOB" eject "$@"
+fi
+
 HELPER="$APP/Contents/Helpers/bandwidth-meter"
 BIN_DIR="${3%/}/usr/local/bin"
 CLI="$BIN_DIR/bandwidth-meter"
@@ -41,6 +97,22 @@ if [ "${3%/}" = "" ] && [ "${COMMAND_LINE_INSTALL:-}" != "1" ]; then
 			uid="$(/usr/bin/id -u "$user" 2>/dev/null)"
 			if [ -n "$uid" ]; then
 				/bin/launchctl asuser "$uid" /usr/bin/sudo -u "$user" /usr/bin/open "$APP" >/dev/null 2>&1 || true
+			fi
+			;;
+	esac
+fi
+
+start="$(/bin/date +%s)"
+pkg="${PACKAGE_PATH:-$1}"
+if [ "${3%/}" = "" ] && [ "${COMMAND_LINE_INSTALL:-}" != "1" ]; then
+	case "$pkg" in
+		/Volumes/*/*)
+			rest="${pkg#/Volumes/}"
+			vol="/Volumes/${rest%%/*}"
+			# Only a mounted disk image, never another disk.
+			if /usr/bin/hdiutil info 2>/dev/null | /usr/bin/awk -F '\t' -v v="$vol" '$NF == v { f = 1 } END { exit !f }'; then
+				before="$(/usr/sbin/pkgutil --pkg-info-plist "$PKG_ID" 2>/dev/null | /usr/bin/plutil -extract install-time raw - 2>/dev/null)"
+				/usr/bin/nohup /bin/sh -c "$EJECT_JOB" eject "$vol" "$pkg" "$before" "$start" </dev/null >/dev/null 2>&1 &
 			fi
 			;;
 	esac

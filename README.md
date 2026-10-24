@@ -89,8 +89,14 @@ don't need Xcode or Terminal.
 
 The installer puts **Bandwidth Meter.app** in `/Applications` and the
 `bandwidth-meter` command in `/usr/local/bin`, which is already on your `PATH`.
-It opens the app when it finishes. To update, run the installer from a newer
-disk image. It replaces the app and keeps your history and settings.
+It opens the app when it finishes, and ejects the disk image once you close the
+installer window. To update, run the installer from a newer disk image. It
+replaces the app and keeps your history and settings.
+
+If Bandwidth+ isn't installed, the installer warns you before it starts. You
+can continue anyway: **Import CSV** works without it, but the totals only stay
+current when [Bandwidth+](https://apps.apple.com/app/bandwidth/id490461369)
+records each day.
 
 The installer isn't notarized yet, so macOS blocks it the first time you open
 it:
